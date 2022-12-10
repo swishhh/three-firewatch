@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { Light } from "./component/light.js";
+import { registryAdd } from "./registry/registry.js";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -13,6 +13,10 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.physicallyCorrectLights = true;
 renderer.setClearColor('#1b1c25');
+
+registryAdd('scene', scene);
+registryAdd('camera', camera);
+registryAdd('renderer', renderer);
 
 const textureLoader = new THREE.TextureLoader();
 
@@ -475,7 +479,7 @@ treeManager.draw(4.5, 0, 4.8, 0.65);
 treeManager.draw(9.2, 0, -2.2, 1.2);
 treeManager.draw(7.8, 0, -3.2, 1);
 
-Light(scene);
+Light();
 
 // addSpotLight('#8fbaff', -50, 100, 100, 125);
 // addAmbientLight('#32385d', 1.5);

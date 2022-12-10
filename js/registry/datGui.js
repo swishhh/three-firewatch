@@ -1,9 +1,9 @@
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-const datGui = new GUI();
+let datGui = null;
 
 const getGui = () => {
-    return datGui;
+    return datGui === null ? datGui = new GUI() : datGui;
 }
 
 export {getGui}
