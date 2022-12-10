@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Light } from "./component/light.js";
 import { registryAdd } from "./registry/registry.js";
+import { Light } from "./component/light.js";
+import { WorldFog} from "./component/fog.js";
+import { addOrbitControls} from "./component/controls/orbit.js";
+import { addUpdateCallback } from "./registry/update.js";
+import { getUpdateCallbacks } from "./registry/update.js";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -35,7 +38,6 @@ camera.lookAt(scene);
 
 const loader = new OBJLoader();
 
-let updateCallbacks = [];
 
 const treeManager = {
     object: null,
@@ -70,26 +72,6 @@ const treeManager = {
             window.tree = tree;
         }
     }
-}
-
-const addSpotLight = (color, x, y, z, intensity = 1) => {
-    let light = new THREE.SpotLight(color, intensity);
-    light.castShadow = true;
-    light.position.x = x;
-    light.position.y = y;
-    light.position.z = z;
-
-    light.shadow.mapSize.width = 252;
-    light.shadow.mapSize.height = 252;
-    light.shadow.camera.near = 0.5;
-    light.shadow.camera.far = 1500;
-    light.shadow.focus = 10;
-
-    window.moon = light;
-}
-
-const addAmbientLight = (color, intensity) => {
-
 }
 
 const addFireCampLight = (color, x, y, z, intensity, distance, blinking = false) => {
@@ -210,9 +192,6 @@ const addTent = () => {
     });
 }
 
-const addFog = (color, near, far) => {
-    scene.fog = new THREE.Fog(color, near, far);
-}
 
 const addFallingSnow = (snowVelocity = 50) => {
     let geometry = new THREE.BufferGeometry();
@@ -271,12 +250,7 @@ const addFallingSnow = (snowVelocity = 50) => {
         }
     }
 
-    updateCallbacks.push(updateSnow);
-}
-
-const addOrbitControls = () => {
-    let controls = new OrbitControls(camera, renderer.domElement);
-    updateCallbacks.push(controls.update);
+    addUpdateCallback(updateSnow)
 }
 
 const makeCloudMovable = (
@@ -304,9 +278,8 @@ const makeCloudMovable = (
         pos = (Math.abs(pos > opacityThreshold ? maxAxisValue : minAxisValue) - Math.abs(pos))
         cloud.material.opacity = (pos / step) * (1 / (opacityThreshold / step));
     }
-    updateCallbacks.push(
-        callback.bind(cloud, moveByAxis, step, maxAxisValue, minAxisValue, opacityThreshold)
-    );
+
+    addUpdateCallback(callback.bind(cloud, moveByAxis, step, maxAxisValue, minAxisValue, opacityThreshold));
 }
 
 const addCloud = () => {
@@ -480,17 +453,17 @@ treeManager.draw(9.2, 0, -2.2, 1.2);
 treeManager.draw(7.8, 0, -3.2, 1);
 
 Light();
+WorldFog();
+addOrbitControls();
 
 // addSpotLight('#8fbaff', -50, 100, 100, 125);
 // addAmbientLight('#32385d', 1.5);
 //addFireCampLight('#ff4d00', 0, 1, 2, 7, 15, true);
 //addFireCamp(.3, 0, 1.9);
 generateTerrain();
-addFog('#32385d', 1, 500);
 addRocks([5.8, -.6, 1.3], 90);
 //addFallingSnow();
 addTent();
-addOrbitControls();
 //addCloud();
 //addFireWatch([-7, 0 , -7], [.040, .050, .040], Math.PI * -1.7);
 addLampPost();
@@ -536,7 +509,7 @@ const Interaction = {
         this.caster = caster;
         this.pointer = pointer;
 
-        updateCallbacks.push(this.update.bind(this))
+        addUpdateCallback(this.update.bind(this))
         window.addEventListener('pointermove', this.onMouseMove.bind(this))
         window.addEventListener('click', this.onClick.bind(this))
         window.addEventListener('keydown', this.onKey.bind(this), false)
@@ -625,7 +598,6 @@ const Interaction = {
 
 Interaction.init();
 
-// updateCallbacks.push(interaction);
 //
 // window.addEventListener('pointermove', onMouseMove);
 
@@ -637,8 +609,9 @@ window.addEventListener( 'resize', () => {
 
 function animate() {
     requestAnimationFrame(animate);
-    for (let i = 0; i < updateCallbacks.length; i++) {
-        updateCallbacks[i]();
+    let callbacks = getUpdateCallbacks();
+    for (let i = 0; i < callbacks.length; i++) {
+        callbacks[i]();
     }
     renderer.render( scene, camera );
 }
