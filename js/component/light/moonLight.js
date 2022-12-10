@@ -1,12 +1,11 @@
-import * as THREE from "three";
+import {SpotLight} from "three";
+import {getGui} from "../../registry/datGui.js";
 
-const SpotLight = (position, color, intensity) => {
-    let light = new THREE.SpotLight(color, intensity);
+const MoonLight = (color, intensity, position, addGui = false) => {
+    let light = new SpotLight(color, intensity);
+    light.position.set(position.x, position.y, position.z);
+
     light.castShadow = true;
-    light.position.x = x;
-    light.position.y = y;
-    light.position.z = z;
-    light.position = {...light.position, ...position};
 
     light.shadow.mapSize.width = 252;
     light.shadow.mapSize.height = 252;
@@ -14,5 +13,21 @@ const SpotLight = (position, color, intensity) => {
     light.shadow.camera.far = 1500;
     light.shadow.focus = 10;
 
-    window.moon = light;
+    if (addGui) {
+        const folder = getGui().addFolder('Moon light');
+        folder.add(light, 'intensity', 0, 400);
+        folder.add(light, 'distance', 0, 2000);
+        folder.add(light, 'castShadow');
+        folder.add(light, 'visible');
+        folder.add(light.position, 'x', -150, 150);
+        folder.add(light.position, 'y', -150, 150);
+        folder.add(light.position, 'z', -150, 150);
+        folder.addColor({color: color}, 'color').onChange((value) => light.color.set(value));
+    }
+
+    light.castShadow = true;
+
+    return light;
 }
+
+export {MoonLight};

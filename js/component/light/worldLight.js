@@ -1,16 +1,17 @@
 import * as THREE from 'three';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import {getGui} from "../../registry/datGui.js";
 
-const AmbientLight = (color, intensity, scene, addGui = false) => {
+const WorldLight = (color, intensity, addGui = false) => {
     const light = new THREE.AmbientLight(color, intensity);
-    scene.add(light);
 
     if (addGui) {
-        const datGui = new GUI();
-        const folder = datGui.addFolder('World light');
+        const folder = getGui().addFolder('World light');
         folder.add(light, 'intensity', 0, 10);
+        folder.add(light, 'visible', 0, 10);
         folder.addColor({color: color}, 'color').onChange((value) => light.color.set(value));
     }
+
+    return light;
 }
 
-export {AmbientLight};
+export {WorldLight};
