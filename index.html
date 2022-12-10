@@ -551,6 +551,110 @@
     treeManager.draw(.3, 0, 7.5, .6);
     treeManager.draw(-.5, 0, 9.1, .9);
 
+    const Interaction = {
+        selectedObject: null,
+        hoverObject: null,
+        pointer: null,
+        caster: null,
+        init: function () {
+            let caster = new THREE.Raycaster();
+            let pointer = new THREE.Vector2();
+            this.caster = caster;
+            this.pointer = pointer;
+
+            updateCallbacks.push(this.update.bind(this))
+            window.addEventListener('pointermove', this.onMouseMove.bind(this))
+            window.addEventListener('click', this.onClick.bind(this))
+            window.addEventListener('keydown', this.onKey.bind(this), false)
+        },
+
+        highlight: function (object, r, g, b) {
+            if (object !== null) {
+                let material = object.material;
+                if (material.length) {
+                    if (material.length > 1) {
+                        material.some((mat) => {
+                            mat.emissive.set(r, g, b);
+                        })
+                    } else {
+                        material.emissive.set(r, g, b);
+                    }
+                } else {
+                    material.emissive.set(r, g, b);
+                }
+            }
+        },
+
+        onMouseMove: function (event) {
+            this.pointer.x =  (event.clientX / window.innerWidth) * 2 - 1;
+            this.pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
+        },
+
+        onKey: function (event) {
+            if (this.selectedObject === null) {
+                return;
+            }
+
+            let code = event.keyCode;
+            switch (code) {
+                case 38:
+                    this.selectedObject.position.z -= 1;
+                    break;
+                case 40:
+                    this.selectedObject.position.z += 1;
+                    break;
+                case 37:
+                    this.selectedObject.position.x -= 1;
+                    break;
+                case 39:
+                    this.selectedObject.position.x += 1;
+                    break;
+            }
+        },
+
+        onClick: function (event) {
+            if (!event.ctrlKey) {
+                return;
+            }
+
+            if (this.selectedObject !== null) {
+                this.highlight(this.selectedObject, 0, 0, 0);
+            }
+
+            if (this.hoverObject !== null) {
+                this.selectedObject = this.hoverObject;
+                this.highlight(this.selectedObject, 255, 0, 0);
+            }
+        },
+
+        unHover: function () {
+            if (this.hoverObject !== null) {
+                //this.highlight(this.hoverObject, 0, 0, 0);
+                this.hoverObject = null;
+            }
+        },
+
+        onHover: function (object) {
+            this.unHover();
+            this.hoverObject = object;
+            //this.highlight(this.hoverObject, 255, 0, 0)
+        },
+
+        update: function () {
+            this.caster.setFromCamera(this.pointer, camera);
+            let intersects = this.caster.intersectObject(scene);
+            if (intersects.length) {
+                this.onHover(intersects.shift().object);
+            }
+        }
+    }
+
+    Interaction.init();
+
+    // updateCallbacks.push(interaction);
+    //
+    // window.addEventListener('pointermove', onMouseMove);
+
     window.addEventListener( 'resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight)
         camera.aspect = window.innerWidth / window.innerHeight;
