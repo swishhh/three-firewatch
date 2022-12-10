@@ -14,8 +14,8 @@ const renderer = new THREE.WebGLRenderer({
     clearColor: 0xdddddd,
     antialias: true
 });
-renderer.physicallyCorrectLights = true;
-renderer.setClearColor('#1b1c25');
+renderer.physicallyCorrectLights = false;
+renderer.setClearColor('#415475');
 
 registryAdd('scene', scene);
 registryAdd('camera', camera);
@@ -101,12 +101,16 @@ const generateTerrain = () => {
     const sizeX = 1.1 * segmentsX;
     const sizeZ = 1.1 * segmentsZ;
 
-    let geometry = new THREE.PlaneGeometry(
+    let geometry = new THREE.PlaneBufferGeometry(
         sizeX,
-        sizeZ
+        sizeZ,
+        segmentsX,
+        segmentsZ
     );
     geometry.rotateX(Math.PI * -0.5);
     let material = new THREE.MeshPhongMaterial( { color: 0x888888 } )
+    material.shininess = 0;
+    window.material =material;
     const terrain = new THREE.Mesh(geometry, material);
 
     terrain.receiveShadow = true;
@@ -116,17 +120,17 @@ const generateTerrain = () => {
     const totalSegmentsX = segmentsX + 1;
     const totalSegmentsZ = segmentsZ + 1;
 
-    // for(let z = 0; z < totalSegmentsZ; z++) {
-    //     for(let x = 0; x < totalSegmentsX; x++) {
-    //         const index = 3 * (z * totalSegmentsX + x);
-    //         let r = 20;
-    //         let center = segmentsX / 2;
-    //
-    //         geometry.attributes.position.array[index + 1] = (z - center) * (z - center) + (x - center) * (x - center) <= r * r
-    //             ? (Math.random() / 1.5) * .3
-    //             : Math.random() * 2;
-    //     }
-    // }
+    for(let z = 0; z < totalSegmentsZ; z++) {
+        for(let x = 0; x < totalSegmentsX; x++) {
+            const index = 3 * (z * totalSegmentsX + x);
+            let r = 20;
+            let center = segmentsX / 2;
+
+            geometry.attributes.position.array[index + 1] = (z - center) * (z - center) + (x - center) * (x - center) <= r * r
+                ? (Math.random() / 1.5) * .3
+                : Math.random() * 2;
+        }
+    }
 }
 
 const addFireCamp = (x, y, z) => {
@@ -441,7 +445,35 @@ let treesButch = [
     [1, 0, -4.5, 0.9],
     [3, 0, -5.5, 0.81],
     [0, 0, -6.5, 1.2],
-    [-2.5, 0, -6.6, 0.9]
+    [-2.5, 0, -6.6, 0.9],
+    [-6, 0, -3.2, 1],
+    [-5.8, 0, -1.2, .8],
+    [-5.8, .3, -7.9, .4],
+    [-6.9, 0, -6.4, .2],
+    [-7.3, 0, -7.1, .4],
+    [-6.5, 0, -8.9, .7],
+    [-4.5, 0, -7.4, .74],
+    [-4.5, 0, -9, .9],
+    [-2.5, 0, -9.3, 1.1],
+    [0, 0, -9, 1.3],
+    [2.4, 0, -7.4, .9],
+    [4.6, 0, -7.3, .85],
+    [6.1, 0, -5.4, 1.2],
+    [-8.3, 0, -3.8, 1],
+    [-9, 0, -5.4, .5],
+    [-8.8, 0, -9.2, .9],
+    [-10.5, 0, -7.6, 1.3],
+    [-10.6, 0, -4.8, 1.1],
+    [-10.1, 0, -2.2, .9],
+    [-8.1, 0, -1.6, 1],
+    [-6.5, 0, .7, 1],
+    [-6.7, 0, 3, .86],
+    [-6, 0, 4.8, .86],
+    [-4.2, 0, 6.4, .77],
+    [-6.2, 0, 6.9, 1.1],
+    [-2.2, 0, 7.1, 1.3],
+    [.3, 0, 7.5, .6],
+    [-.5, 0, 9.1, .9]
 ];
 
 for (let i = 0; i < treesButch.length; i++) {
@@ -456,47 +488,15 @@ Light();
 WorldFog();
 addOrbitControls();
 
-// addSpotLight('#8fbaff', -50, 100, 100, 125);
-// addAmbientLight('#32385d', 1.5);
-//addFireCampLight('#ff4d00', 0, 1, 2, 7, 15, true);
-//addFireCamp(.3, 0, 1.9);
+addFireCampLight('#ff4d00', 0, 1, 2, 2, 10, true);
+addFireCamp(.3, 0, 1.9);
 generateTerrain();
 addRocks([5.8, -.6, 1.3], 90);
-//addFallingSnow();
+addFallingSnow();
 addTent();
 //addCloud();
 //addFireWatch([-7, 0 , -7], [.040, .050, .040], Math.PI * -1.7);
-addLampPost();
-
-treeManager.draw(-6, 0, -3.2, 1);
-treeManager.draw(-5.8, 0, -1.2, .8);
-treeManager.draw(-5.8, .3, -7.9, .4);
-treeManager.draw(-6.9, 0, -6.4, .2);
-treeManager.draw(-6.9, 0, -6.4, .2);
-treeManager.draw(-7.3, 0, -7.1, .4);
-treeManager.draw(-6.5, 0, -8.9, .7);
-treeManager.draw(-4.5, 0, -7.4, .74);
-treeManager.draw(-4.5, 0, -9, .9);
-treeManager.draw(-2.5, 0, -9.3, 1.1);
-treeManager.draw(0, 0, -9, 1.3);
-treeManager.draw(2.4, 0, -7.4, .9);
-treeManager.draw(4.6, 0, -7.3, .85);
-treeManager.draw(6.1, 0, -5.4, 1.2);
-treeManager.draw(-8.3, 0, -3.8, 1);
-treeManager.draw(-9, 0, -5.4, .5);
-treeManager.draw(-8.8, 0, -9.2, .9);
-treeManager.draw(-10.5, 0, -7.6, 1.3);
-treeManager.draw(-10.6, 0, -4.8, 1.1);
-treeManager.draw(-10.1, 0, -2.2, .9);
-treeManager.draw(-8.1, 0, -1.6, 1);
-treeManager.draw(-6.5, 0, .7, 1);
-treeManager.draw(-6.7, 0, 3, .86);
-treeManager.draw(-6, 0, 4.8, .86);
-treeManager.draw(-4.2, 0, 6.4, .77);
-treeManager.draw(-6.2, 0, 6.9, 1.1);
-treeManager.draw(-2.2, 0, 7.1, 1.3);
-treeManager.draw(.3, 0, 7.5, .6);
-treeManager.draw(-.5, 0, 9.1, .9);
+//addLampPost();
 
 const Interaction = {
     selectedObject: null,
