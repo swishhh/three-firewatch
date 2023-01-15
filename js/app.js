@@ -6,6 +6,8 @@ import { WorldFog} from "./component/fog.js";
 import { addOrbitControls} from "./component/controls/orbit.js";
 import { addUpdateCallback } from "./registry/update.js";
 import { getUpdateCallbacks } from "./registry/update.js";
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { FirstPersonControls } from "./component/controls/firstPerson.js";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -32,9 +34,9 @@ document.body.appendChild( renderer.domElement );
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-camera.position.z = 10;
-camera.position.y = 10;
-camera.lookAt(scene);
+camera.position.z = 0;
+camera.position.y = 1.5;
+// camera.lookAt(scene);
 
 const loader = new OBJLoader();
 
@@ -110,8 +112,8 @@ const generateTerrain = () => {
     geometry.rotateX(Math.PI * -0.5);
     let material = new THREE.MeshPhongMaterial( { color: 0x888888 } )
     material.shininess = 0;
-    window.material =material;
     const terrain = new THREE.Mesh(geometry, material);
+    window.terrain = terrain;
 
     terrain.receiveShadow = true;
     scene.add(terrain)
@@ -486,13 +488,20 @@ treeManager.draw(7.8, 0, -3.2, 1);
 
 Light();
 WorldFog();
-addOrbitControls();
+
+console.log(camera);
+
+// camera.lookAt(scene); // move it to addOrbitControls.
+// addOrbitControls();
+
+FirstPersonControls();
+
 
 addFireCampLight('#ff4d00', 0, 1, 2, 2, 10, true);
 addFireCamp(.3, 0, 1.9);
 generateTerrain();
 addRocks([5.8, -.6, 1.3], 90);
-addFallingSnow();
+//addFallingSnow();
 addTent();
 //addCloud();
 //addFireWatch([-7, 0 , -7], [.040, .050, .040], Math.PI * -1.7);

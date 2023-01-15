@@ -5,6 +5,7 @@ import { addUpdateCallback } from "../../registry/update.js";
 const addOrbitControls = () => {
     let controls = new OrbitControls(registryGet('camera'), registryGet('renderer').domElement);
     addUpdateCallback(controls.update);
+    controls.enabled = false;
 }
 
 export {addOrbitControls}
