@@ -1,14 +1,12 @@
 import { Fog } from 'three';
-import { registryGet } from "../registry/registry.js";
-import { getGui } from "../registry/datGui.js";
+import { getGui } from "../../../registry/datGui.js";
 
 const FOG_COLOR = '#0f1329';
 const FOG_NEAR = 1;
 const FOG_FAR = 70;
 const FOG_GUI = false;
 
-const WorldFog = () => {
-    let scene = registryGet('scene');
+const draw = (scene, camera, renderer) => {
     scene.fog = new Fog(FOG_COLOR, FOG_NEAR, FOG_FAR)
     if (FOG_GUI) {
         let datGui = getGui();
@@ -19,4 +17,4 @@ const WorldFog = () => {
     }
 }
 
-export {WorldFog}
+export {draw}
