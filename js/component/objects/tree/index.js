@@ -45,9 +45,7 @@ const draw = (scene, camera, renderer) => {
     for (let i = 0; i < treesButch.length; i++) {
         treeManager.draw(...treesButch[i]);
     }
-    treeManager.draw(4.5, 0, 4.8, 0.65);
-    treeManager.draw(9.2, 0, -2.2, 1.2);
-    treeManager.draw(7.8, 0, -3.2, 1);
+    treeManager.draw(0, 0, 0, 1);
 }
 
 export {draw}

@@ -24,22 +24,28 @@ registryAdd('textureLoader', textureLoader);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
 document.body.appendChild( renderer.domElement );
 
 camera.position.z = 10;
 camera.position.y = 10;
 camera.lookAt(scene);
+camera.fov = 60;
+window.camera = camera;
 
 await draw();
 
+const clock = new THREE.Clock();
+
 function animate() {
     requestAnimationFrame(animate);
+    renderer.render( scene, camera );
     let callbacks = getUpdateCallbacks();
     for (let i = 0; i < callbacks.length; i++) {
-        callbacks[i]();
+        callbacks[i](clock.getDelta());
     }
-    renderer.render( scene, camera );
 }
 
 animate();
