@@ -54,8 +54,6 @@ const FirstPersonControls = () => {
         registryGet('camera'), registryGet('renderer').domElement
     );
 
-    // console.log(registryGet('scene'))
-
     window.scene = registryGet('scene').children;
     window.rayCaster = rayCaster;
 

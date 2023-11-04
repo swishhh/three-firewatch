@@ -7,8 +7,6 @@ import {addUpdateCallback} from '../../../registry/update.js';
 const loader = registryGet('loader');
 const scene = registryGet('scene');
 
-let mixer;
-
 const treeManager = {
     object: null,
 
@@ -24,7 +22,7 @@ const treeManager = {
         loader.load('../../../../obj/lowpolytree.obj', (model) => {
             this.object = model.children[0];
             this.object.material.some((material) => {
-                let color = material.name === 'Leaves' ? '#164200' : '#472706'
+                let color = material.name === 'Leaves' ? '#0a1f00' : '#241302'
                 material.color = new THREE.Color(color);
             })
 

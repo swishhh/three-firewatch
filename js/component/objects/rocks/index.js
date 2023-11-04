@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {registryGet} from '../../../registry/registry.js';
+import {interactableAdd} from '../../../registry/interactableObjects.js';
 
-const position = [5.8, -.6, 1.3];
+const position = [10.2, -.6, -2];
 const rotateYDeg = 90;
 
 const draw = (scene, camera, renderer) => {
@@ -14,10 +15,11 @@ const draw = (scene, camera, renderer) => {
         model.traverse((child) => {
             if (child.isMesh) {
                 if (child.name.indexOf('Icosphere') !== -1) {
-                    child.material.color = new THREE.Color('#656563');
+                    child.material.color = new THREE.Color('#383838');
                 }
                 child.receiveShadow = true;
                 child.castShadow = true;
+                interactableAdd(child.uuid, child)
             }
         })
     });

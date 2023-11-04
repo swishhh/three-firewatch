@@ -6,17 +6,24 @@ const components = {
     'tent': './objects/tent/index.js',
     'clouds': './objects/clouds/index.js',
     'tree': './objects/tree/index.js',
+    'bush': './objects/bush/index.js',
+    'grass': './objects/grass/index.js',
     'terrain': './objects/terrain/index.js',
+    'water': './objects/water/index.js',
+    // 'house': './objects/house/index.js',
     // 'fireWatch': './objects/fireWatch/index.js',
-    'snow': './objects/snow/index.js',
+    // 'snow': './objects/snow/index.js',
     // 'fireCamp': './objects/fireCamp/index.js',
     'fog': './objects/fog/index.js',
     'light': './light.js',
     'mapControls': './controls/map.js',
     'resize': './resize/index.js',
     'mouse': './controls/mouse.js',
+    'toolbar': './controls/toolbar.js',
+    'object': './controls/object.js',
     'mouseSelect': './controls/mouse/select.js',
-    'outline': './action/object/outline.js'
+    'outline': './action/object/outline.js',
+    'stats': './stats.js',
 }
 
 async function draw() {

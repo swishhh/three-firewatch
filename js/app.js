@@ -1,10 +1,14 @@
 import * as THREE from 'three';
-import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { OBJLoader } from '../lib/addons/loaders/OBJLoader.js';
+import { MTLLoader } from '../lib/addons/loaders/MTLLoader.js';
+import { GLTFLoader } from '../lib/addons/loaders/GLTFLoader.js';
 import { registryAdd } from "./registry/registry.js";
 import { getUpdateCallbacks } from "./registry/update.js";
 import { draw } from "./component/scene.js";
 
 const loader = new OBJLoader();
+const mtlLoader = new MTLLoader();
+const gltfLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader();
 
 const scene = new THREE.Scene();
@@ -19,11 +23,13 @@ registryAdd('scene', scene);
 registryAdd('camera', camera);
 registryAdd('renderer', renderer);
 registryAdd('loader', loader);
+registryAdd('mtlLoader', mtlLoader);
+registryAdd('gltfLoader', gltfLoader);
 registryAdd('textureLoader', textureLoader);
 
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
