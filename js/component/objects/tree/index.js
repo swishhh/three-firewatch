@@ -1,14 +1,6 @@
-import {treeManager, drawAnimated} from "./manager.js";
-
-import {addUpdateCallback} from '../../../registry/update.js';
-
 import * as THREE from 'three';
 import {registryGet} from '../../../registry/registry.js';
-import {interactableAdd} from '../../../registry/interactableObjects.js';
 import {objectManager} from "../../../tools/object/manager.js";
-import {addSwing} from "./animation/swing.js";
-import {mergeBufferGeometries} from '../../../../lib/addons/jsm/utils/BufferGeometryUtils.js';
-
 import {mergeMeshes} from "../../../tools/mesh";
 
 const MAP = [
