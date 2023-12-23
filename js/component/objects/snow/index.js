@@ -23,7 +23,7 @@ const createCanvasMaterial = (size, color) => {
 const draw = (scene, camera, renderer) => {
     const geometry = new THREE.BufferGeometry();
     const material = new THREE.PointsMaterial({
-        size: .07,
+        size: .05,
         color: 0xffffff,
         map: createCanvasMaterial(256, '#ffffff'),
         transparent: true,
@@ -116,8 +116,8 @@ const draw = (scene, camera, renderer) => {
             y: 15,
             z: 50
         },
-        speed: 0.4,
-        speedY: 2
+        speed: 0.9,
+        speedY: 6
     }
 
     snow.initialize(configuration)

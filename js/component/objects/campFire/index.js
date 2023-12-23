@@ -59,30 +59,44 @@ const draw = (scene, camera, renderer) => {
         model.add(campLight);
         model.add(campGlowLight);
 
-        // if (isVisible) {
-        //     const fireCampFolder = getGui().addFolder('Fire Camp');
-        //     const fireCampLightFolder = fireCampFolder.addFolder('Light')
-        //     fireCampLightFolder.add(campLight, 'decay', -1, 20);
-        //     fireCampLightFolder.add(campLight, 'intensity', 0, 20);
-        //     fireCampLightFolder.add(campLight, 'distance', 0, 50);
-        //     fireCampLightFolder.addColor(
-        //         {color: campLightColor}, 'color').onChange((value) => campLight.color.set(value)
-        //     );
-        //     const fireCampGlowLightFolder = fireCampFolder.addFolder('Glow Light')
-        //     fireCampGlowLightFolder.add(campGlowLight, 'decay', -1, 20);
-        //     fireCampGlowLightFolder.add(campGlowLight, 'intensity', 0, 20);
-        //     fireCampGlowLightFolder.add(campGlowLight, 'distance', 0, 50);
-        //     fireCampGlowLightFolder.addColor(
-        //         {color: campGlowLightColor}, 'color').onChange((value) => campGlowLight.color.set(value)
-        //     );
-        // }
-
         addUpdateCallback(campLight.blink.bind(campLight))
 
 
         // smoke simulation
 
         let group = createSmoke(model.position.x, model.scale.y + .5, model.position.z);
+
+        if (isVisible) {
+            const fireCampFolder = getGui().addFolder('Fire Camp');
+            const fireCampLightFolder = fireCampFolder.addFolder('Light')
+            fireCampLightFolder.add(campLight, 'decay', -1, 20);
+            fireCampLightFolder.add(campLight, 'intensity', 0, 20);
+            fireCampLightFolder.add(campLight, 'distance', 0, 50);
+            fireCampLightFolder.addColor(
+                {color: campLightColor}, 'color').onChange((value) => campLight.color.set(value)
+            );
+            const fireCampGlowLightFolder = fireCampFolder.addFolder('Glow Light')
+            fireCampGlowLightFolder.add(campGlowLight, 'decay', -1, 20);
+            fireCampGlowLightFolder.add(campGlowLight, 'intensity', 0, 20);
+            fireCampGlowLightFolder.add(campGlowLight, 'distance', 0, 50);
+            fireCampGlowLightFolder.addColor(
+                {color: campGlowLightColor}, 'color').onChange((value) => campGlowLight.color.set(value)
+            );
+
+            fireCampFolder.close()
+
+            const fireCampSmokeFolder = fireCampFolder.addFolder('Fire Camp Smoke');
+            fireCampSmokeFolder.addColor({color: 0x000000}, 'color').onChange(function (value) {
+                group.children.forEach(function (child) {
+                    child.material.color.set(value)
+                })
+            });
+            fireCampSmokeFolder.add({opacity: 1}, 'opacity', 0, 1).onChange(function (value) {
+                group.children.forEach(function (child) {
+                    child.material.opacity = value
+                })
+            });
+        }
 
         scene.add(model);
         scene.add(group)

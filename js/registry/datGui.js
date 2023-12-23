@@ -8,7 +8,11 @@ const getGui = () => {
         return
     }
     
-    return datGui === null ? datGui = new GUI() : datGui;
+    let result = datGui === null ? datGui = new GUI() : datGui;
+
+    result.close();
+
+    return result;
 }
 
 const isVisible = () => {

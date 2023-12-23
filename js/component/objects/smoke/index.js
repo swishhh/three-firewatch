@@ -15,9 +15,9 @@ const COUNT = 20;
 const SALT = .4;
 const FADE_AWAY = true;
 const OPACITY = .5;
-const MIN_OPACITY = .05;
+const MIN_OPACITY = .4;
 const RANDOMIZE_OPACITY = true;
-const COLOR = 0x474747;
+const COLOR = 0x000000;
 
 // todo randomize initial opacity
 
