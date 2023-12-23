@@ -247,6 +247,81 @@ const list = {
 
             model.distanceRender = true;
         }
+    },
+    'rocks': {
+        path:  './obj/rocks.obj',
+        callback: (model) => {
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    if (child.name.indexOf('Icosphere') !== -1) {
+                        child.material.color = new THREE.Color('#383838');
+                    }
+                    child.receiveShadow = true;
+                    child.castShadow = true;
+                    child.material.shininess = 0;
+                    child.material.reflectivity = false;
+                }
+            })
+        }
+    },
+    'tent': {
+        path:  './obj/tent.obj',
+        callback: (model) => {
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.some((material) => {
+                        if (material.name.indexOf('brown') !== -1) {
+                            material.color = new THREE.Color('#381801');
+                        }
+                        if (material.name.indexOf('green') !== -1) {
+                            material.color = new THREE.Color('#d2d1d1');
+                        }
+                        material.shininess = 0;
+                        material.reflectivity = false;
+                    })
+                    child.receiveShadow = true;
+                    child.castShadow = true;
+                }
+            })
+        }
+    },
+    'cloud': {
+        path:  './obj/cloud.obj',
+        callback: (model) => {
+            let object = model.children[0];
+            object.material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true
+            });
+        }
+    },
+    'camp-fire': {
+        path:  './obj/campfire.obj',
+        callback: (model) => {
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    let material = child.material;
+                    material.forEach(function (childMaterial) {
+                        switch (childMaterial.name) {
+                            case 'darkWood':
+                                childMaterial.color = new THREE.Color('#1d0f02');
+                                break;
+                            case 'lightWood':
+                                childMaterial.color = new THREE.Color('#532d09');
+                                break;
+                            case 'rock':
+                                childMaterial.color = new THREE.Color('#505050');
+                                break;
+                            case 'darkDirt':
+                                childMaterial.color = new THREE.Color('#090301');
+                                break;
+                        }
+                        childMaterial.shininess = 0;
+                        childMaterial.reflectivity = false;
+                    })
+                }
+            })
+        }
     }
 }
 

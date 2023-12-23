@@ -1,39 +1,14 @@
 import * as THREE from 'three';
-import {registryGet} from "../../../registry/registry.js";
 import {interactableAdd} from '../../../registry/interactableObjects.js';
 import {getGui, isVisible} from "../../../registry/datGui.js";
 import {addUpdateCallback} from '../../../registry/update.js';
 import {createSmoke} from "../smoke/index.js";
+import {objectManager} from "../../../tools/object/manager.js";
 
 
 const draw = (scene, camera, renderer) => {
-    const loader = registryGet('loader');
-    loader.load('../../../../obj/campfire.obj', (model) => {
-        scene.add(model);
+    objectManager.load('camp-fire', (model) => {
         model.scale.set(.7, .7, .7);
-        model.traverse((child) => {
-            if (child.isMesh) {
-                let material = child.material;
-                material.forEach(function (childMaterial) {
-                    switch (childMaterial.name) {
-                        case 'darkWood':
-                            childMaterial.color = new THREE.Color('#1d0f02');
-                            break;
-                        case 'lightWood':
-                            childMaterial.color = new THREE.Color('#532d09');
-                            break;
-                        case 'rock':
-                            childMaterial.color = new THREE.Color('#505050');
-                            break;
-                        case 'darkDirt':
-                            childMaterial.color = new THREE.Color('#090301');
-                            break;
-                    }
-                    childMaterial.shininess = 0;
-                    childMaterial.reflectivity = false;
-                })
-            }
-        })
 
         interactableAdd(model.uuid, model)
 
@@ -109,6 +84,7 @@ const draw = (scene, camera, renderer) => {
 
         let group = createSmoke(model.position.x, model.scale.y + .5, model.position.z);
 
+        scene.add(model);
         scene.add(group)
     });
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import {registryGet} from '../../../registry/registry.js';
 import {addUpdateCallback} from "../../../registry/update.js";
+import {objectManager} from "../../../tools/object/manager.js";
 
 const map = [
     [
@@ -56,13 +56,9 @@ const makeCloudMovable = (
 }
 
 const draw = (scene, camera, renderer) => {
-    const loader = registryGet('loader');
-    loader.load('../../../../obj/cloud.obj', (model) => {
-        let object = model.children.pop();
-        object.material = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            transparent: true
-        });
+    objectManager.load('cloud', (model) => {
+        let object = model.children[0];
+
         for (let i = 0; i < map.length; i++) {
             let cloud = new THREE.Mesh(object.geometry.clone(), object.material.clone());
             cloud.position.set(...map[i][0])
@@ -81,7 +77,7 @@ const draw = (scene, camera, renderer) => {
                 3
             )
         }
-    });
+    })
 }
 
 export {draw}

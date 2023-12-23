@@ -1,31 +1,14 @@
-import * as THREE from 'three';
-import {registryGet} from '../../../registry/registry.js';
 import {interactableAdd} from '../../../registry/interactableObjects.js';
+import {objectManager} from "../../../tools/object/manager.js";
 
 const draw = (scene, camera, renderer) => {
-    const loader = registryGet('loader');
-    loader.load('../../../../obj/tent.obj', (model) => {
-        scene.add(model);
+    objectManager.load('tent', (model) => {
         model.position.set(3.5, 0, -6)
-        // model.rotateY(29)
-        model.traverse((child) => {
-            if (child.isMesh) {
-                child.material.some((material) => {
-                    if (material.name.indexOf('brown') !== -1) {
-                        material.color = new THREE.Color('#381801');
-                    }
-                    if (material.name.indexOf('green') !== -1) {
-                        material.color = new THREE.Color('#d2d1d1');
-                    }
-                    material.shininess = 0;
-                    material.reflectivity = false;
-                })
-                child.receiveShadow = true;
-                child.castShadow = true;
-            }
-        })
+
         interactableAdd(model.uuid, model)
-    });
+
+        scene.add(model);
+    })
 }
 
 export {draw}
