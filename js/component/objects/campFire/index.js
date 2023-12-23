@@ -3,7 +3,7 @@ import {registryGet} from "../../../registry/registry.js";
 import {interactableAdd} from '../../../registry/interactableObjects.js';
 import {getGui, isVisible} from "../../../registry/datGui.js";
 import {addUpdateCallback} from '../../../registry/update.js';
-import {createSmoke} from "../smoke";
+import {createSmoke} from "../smoke/index.js";
 
 
 const draw = (scene, camera, renderer) => {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {registryGet} from '../../../registry/registry.js';
 import {objectManager} from "../../../tools/object/manager.js";
-import {mergeMeshes} from "../../../tools/mesh";
+import {mergeMeshes} from "../../../tools/mesh/index.js";
 
 const MAP = [
     [0, 0, 0, 1],
