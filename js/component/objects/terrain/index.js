@@ -49,6 +49,25 @@ const fixRelativeObject = function (uuid = null) {
     }
 }
 
+const relateY = function (object) {
+    let geometry = this.geometry;
+    let radius = (object.scale.x + object.scale.z) / 2;
+    let heightsArray = [];
+    for (let i = 0; i < geometry.vertices.length; i += 3) {
+        let x = geometry.attributes.position.array[i];
+        let z = geometry.attributes.position.array[i + 2];
+
+        let val = Math.pow(x - object.position.x, 2) + Math.pow(z - object.position.z, 2);
+        if (val < Math.pow(radius, 2)) {
+            heightsArray.push(geometry.attributes.position.array[i + 1])
+        }
+    }
+    if (heightsArray.length > 0) {
+        let min = Math.min(...heightsArray)
+        object.position.y += min;
+    }
+}
+
 const draw = (scene, camera, renderer) => {
     const size = 50;
     const segments = 120;
@@ -66,6 +85,8 @@ const draw = (scene, camera, renderer) => {
     terrain.addRelativeObject = addRelativeObject;
     terrain.fixRelativeObject = fixRelativeObject;
     terrain.relativeObjects = {};
+
+    terrain.relateY = relateY
 
     scene.add(terrain) // interactable terrain
     registryAdd('terrain', terrain)// interactable terrain

@@ -119,7 +119,7 @@ const drawAnimated = (x = 0, y = 0, z = 0, scale) => {
         );
         interactableAdd(model.uuid, model); // todo: meshes unmerged, won't work
 
-        scene.add(model);
+        // scene.add(model);
     })
 }
 
