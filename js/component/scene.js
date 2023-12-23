@@ -1,6 +1,9 @@
 import { registryGet } from "../registry/registry.js";
+import {addUpdateCallback} from "../registry/update.js";
+import {initSceneRenderer} from "./renderer";
 
 const components = {
+    'terrain': './objects/terrain/index.js',
     'rocks': './objects/rocks/index.js',
     // 'lampPost': './objects/lampPost/index.js',
     'tent': './objects/tent/index.js',
@@ -8,8 +11,11 @@ const components = {
     'tree': './objects/tree/index.js',
     'bush': './objects/bush/index.js',
     'grass': './objects/grass/index.js',
-    'terrain': './objects/terrain/index.js',
-    'water': './objects/water/index.js',
+    // 'water': './objects/water/index.js',
+    'campFire': './objects/campFire/index.js',
+    'picnicTable': './objects/picnicTable/index.js',
+    'welcomeSign': './objects/welcomeSign/index.js',
+    'bird': './objects/bird/index.js',
     // 'house': './objects/house/index.js',
     // 'fireWatch': './objects/fireWatch/index.js',
     // 'snow': './objects/snow/index.js',
@@ -18,10 +24,10 @@ const components = {
     'light': './light.js',
     'mapControls': './controls/map.js',
     'resize': './resize/index.js',
-    'mouse': './controls/mouse.js',
-    'toolbar': './controls/toolbar.js',
+    // 'mouse': './controls/mouse.js',
+    // 'toolbar': './controls/toolbar.js',
     'object': './controls/object.js',
-    'mouseSelect': './controls/mouse/select.js',
+    // 'mouseSelect': './controls/mouse/select.js',
     'outline': './action/object/outline.js',
     'stats': './stats.js',
 }
@@ -34,5 +40,7 @@ async function draw() {
         const component = await import(path);
         component.draw(scene, camera, renderer);
     }
+
+    initSceneRenderer(scene, camera, renderer);
 }
 export {draw}

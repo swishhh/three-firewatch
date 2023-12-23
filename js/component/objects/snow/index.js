@@ -35,7 +35,7 @@ const draw = (scene, camera, renderer) => {
         map: textureLoader.load('../../../../textures/sprites/snowflake.png'),
         blending: THREE.AdditiveBlending,
         depthTest: false,
-        transparent: false,
+        transparent: true,
         opacity: 0.7
     });
 

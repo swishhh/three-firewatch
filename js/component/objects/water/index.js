@@ -37,7 +37,7 @@ const draw = (scene, camera, renderer) => {
 
     scene.add(water);
 
-    addGUI(water);
+    // addGUI(water);
 
     const waterFactor = 0.002;
     const maxY = .15;

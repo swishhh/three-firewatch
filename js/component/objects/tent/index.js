@@ -17,6 +17,8 @@ const draw = (scene, camera, renderer) => {
                     if (material.name.indexOf('green') !== -1) {
                         material.color = new THREE.Color('#d2d1d1');
                     }
+                    material.shininess = 0;
+                    material.reflectivity = false;
                 })
                 child.receiveShadow = true;
                 child.castShadow = true;

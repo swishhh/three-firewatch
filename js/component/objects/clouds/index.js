@@ -4,25 +4,25 @@ import {addUpdateCallback} from "../../../registry/update.js";
 
 const map = [
     [
-        [-1, 12, 1], [.7, .7, .7]
+        [-1, 16, 1], [.7, .7, .7]
     ],
     [
-        [-10, 9, -3], [.6, .5, .6]
+        [-10, 13, -3], [.6, .5, .6]
     ],
     [
-        [5, 10, 4], [.4, .4, .4]
+        [5, 14, 4], [.4, .4, .4]
     ],
     [
-        [9, 11, -4], [.8, .8, .8]
+        [9, 15, -4], [.8, .8, .8]
     ],
     [
-        [-2, 8.5, -10], [.3, .3, .3]
+        [-2, 12.5, -10], [.3, .3, .3]
     ],
     [
-        [-5, 10, 8], [.9, .9, .9]
+        [-5, 14, 8], [.9, .9, .9]
     ],
     [
-        [8, 9, 10], [.25, .25, .25]
+        [8, 13, 10], [.25, .25, .25]
     ],
 ];
 
@@ -59,12 +59,18 @@ const draw = (scene, camera, renderer) => {
     const loader = registryGet('loader');
     loader.load('../../../../obj/cloud.obj', (model) => {
         let object = model.children.pop();
+        object.material = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true
+        });
         for (let i = 0; i < map.length; i++) {
             let cloud = new THREE.Mesh(object.geometry.clone(), object.material.clone());
             cloud.position.set(...map[i][0])
             cloud.scale.set(...map[i][1])
             cloud.receiveShadow = true;
             cloud.castShadow = true;
+            cloud.material.shininess = 0;
+            cloud.material.reflectivity = false;
             scene.add(cloud);
             makeCloudMovable(
                 cloud,

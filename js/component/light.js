@@ -11,7 +11,8 @@ const MOON_LIGHT_POSITION_Z = 100;
 const draw = (scene, camera, renderer) => {
     renderer.physicallyCorrectLights = true;
     // winter color 2c241c
-    renderer.setClearColor('#4b6fc4');
+    renderer.setClearColor(0x173e4f);
+    window.renderer = renderer;
 
     const hemisphereLight = HemisphereLight(
         MOON_LIGHT_COLOR,
@@ -20,10 +21,8 @@ const draw = (scene, camera, renderer) => {
         false
     )
 
-    window.worldLight = hemisphereLight;
-
-    // let winter color 0xffe2c2
-    const shadowLight = addShadowLight(-3, 5, 5, 0xffffff, 4)
+    // dark 1.1.
+    const shadowLight = addShadowLight(-3, 5, 5, 0x009dff, 3.9)
 
     scene.add(hemisphereLight);
     scene.add(shadowLight);
