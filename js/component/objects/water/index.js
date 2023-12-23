@@ -91,6 +91,7 @@ const draw = (scene, camera, renderer) => {
 }
 
 const addGUI = (water) => {
+    return;
     const folder = getGui().addFolder('Water');
     folder.addColor({color: water.material.color}, 'color').onChange((value) => water.material.color.set(value));
 }

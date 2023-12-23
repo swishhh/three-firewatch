@@ -25,7 +25,7 @@ const HemisphereLight = (color, intensity, addGui = false) => {
     light.castShadow = false;
     window.hemiLight = light;
 
-    if (true) {
+    if (false) {
         const folder = getGui().addFolder('World light');
         folder.add(light, 'intensity', 0, 10);
         folder.add(light, 'castShadow');

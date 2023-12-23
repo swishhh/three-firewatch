@@ -136,7 +136,7 @@ const createSmoke = (x, y, z) => {
     }, 1000 - (FREQUENCY * 1000));
 
 
-    if (isVisible) {
+    if (false) {
         const fireCampFolder = getGui().addFolder('Fire Camp Smoke');
         fireCampFolder.addColor({color: COLOR}, 'color').onChange(function (value) {
             group.children.forEach(function (child) {

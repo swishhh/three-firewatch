@@ -13,7 +13,7 @@ const MoonLight = (color, intensity, position, addGui = false) => {
     // light.shadow.camera.far = 1500;
     // light.shadow.focus = 10;
 
-    if (true) {
+    if (false) {
         const folder = getGui().addFolder('Moon light');
         folder.add(light, 'intensity', 0, 4);
         folder.add(light, 'distance', 0, 700);

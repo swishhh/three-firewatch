@@ -13,7 +13,7 @@ const draw = (scene, camera, renderer) => {
     // let density = 0;
     scene.fog = new FogExp2(color, density);
     window.fog = scene.fog;
-    if (FOG_GUI) {
+    if (false) {
         let datGui = getGui();
         let folder = datGui.addFolder('Fog');
         folder.add(scene.fog, 'density', 0, .15);
