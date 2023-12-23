@@ -74,6 +74,7 @@ const draw = (scene, camera, renderer) => {
 
     const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
     const material = new THREE.MeshStandardMaterial( { color: 0x888888 } )
+    // const material = new THREE.MeshStandardMaterial( { color: 0x1d3825 } )
     const terrain = new THREE.Mesh(geometry, material);
 
     geometry.rotateX(Math.PI * -0.5);

@@ -13,11 +13,12 @@ const draw = (scene, camera, renderer) => {
     // let density = 0;
     scene.fog = new FogExp2(color, density);
     window.fog = scene.fog;
-    if (false) {
+    if (FOG_GUI) {
         let datGui = getGui();
         let folder = datGui.addFolder('Fog');
         folder.add(scene.fog, 'density', 0, .15);
         folder.addColor({color: color}, 'color').onChange((value) => scene.fog.color.set(value));
+        folder.close()
     }
 }
 

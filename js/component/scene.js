@@ -17,7 +17,7 @@ const components = {
     'bird': './objects/bird/index.js',
     // 'house': './objects/house/index.js',
     // 'fireWatch': './objects/fireWatch/index.js',
-    // 'snow': './objects/snow/index.js',
+    'snow': './objects/snow/index.js',
     // 'fireCamp': './objects/fireCamp/index.js',
     'fog': './objects/fog/index.js',
     'light': './light.js',

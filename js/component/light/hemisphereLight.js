@@ -25,13 +25,14 @@ const HemisphereLight = (color, intensity, addGui = false) => {
     light.castShadow = false;
     window.hemiLight = light;
 
-    if (false) {
+    if (true) {
         const folder = getGui().addFolder('World light');
         folder.add(light, 'intensity', 0, 10);
         folder.add(light, 'castShadow');
         folder.add(light, 'visible');
         folder.addColor({color: color}, 'color').onChange((value) => light.color.set(value));
         folder.addColor({groundColor: groundColor}, 'groundColor').onChange((value) => light.groundColor.set(value));
+        folder.close();
     }
 
     return light;
