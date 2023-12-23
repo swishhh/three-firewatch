@@ -1,5 +1,4 @@
 import { registryGet } from "../registry/registry.js";
-import {addUpdateCallback} from "../registry/update.js";
 import {initSceneRenderer} from "./renderer/index.js";
 
 const components = {

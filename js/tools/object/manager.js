@@ -3,12 +3,11 @@ import {registryGet} from '../../registry/registry.js';
 
 const loader = registryGet('loader');
 const gltfLoader = registryGet('gltfLoader');
-const scene = registryGet('scene');
 
 const storage = {};
 const list = {
     'bush-tree': {
-        path: '../../../obj/bush-tree.obj',
+        path: './obj/bush-tree.obj',
         callback: (model) => {
             model.scale.set(.25, .25, .25);
             model.children.forEach((child) => {
@@ -36,7 +35,7 @@ const list = {
         }
     },
     'bush-tree-harvest': {
-        path: '../../../obj/bush-tree-harvest.obj',
+        path: './obj/bush-tree-harvest.obj',
         callback: (model) => {
             model.scale.set(.25, .25, .25);
             model.children.forEach((child) => {
@@ -69,7 +68,7 @@ const list = {
         }
     },
     'grass': {
-        path: '../../../obj/grass.obj',
+        path: './obj/grass.obj',
         callback: (model) => {
             model.children.forEach((child) => {
                 switch (child.material.name) {
@@ -84,7 +83,7 @@ const list = {
         }
     },
     'picnic-table': {
-        path: '../../../obj/picnic-table.obj',
+        path: './obj/picnic-table.obj',
         callback: (model) => {
             model.children.forEach((child) => {
                 switch (child.material.name) {
@@ -99,7 +98,7 @@ const list = {
         }
     },
     'rocks-array': {
-        path: '../../../obj/rocksArray1.obj',
+        path: './obj/rocksArray1.obj',
         callback: (model) => {
             model.children.forEach((child) => {
                 child.material.forEach(function (material) {
@@ -119,7 +118,7 @@ const list = {
         }
     },
     'small-rocks-array': {
-        path: '../../../obj/small-rocksArray.obj',
+        path: './obj/small-rocksArray.obj',
         callback: (model) => {
             model.children.forEach((child) => {
                 child.material.forEach(function (material) {
@@ -139,7 +138,7 @@ const list = {
         }
     },
     'tiny-rock-vertical': {
-        path: '../../../obj/tiny-rock-vertical.obj',
+        path: './obj/tiny-rock-vertical.obj',
         callback: (model) => {
             model.children.forEach((child) => {
                 switch (child.material.name) {
@@ -152,7 +151,7 @@ const list = {
         }
     },
     'welcome-sign': {
-        path: '../../../obj/welcome-sign.obj',
+        path: './obj/welcome-sign.obj',
         callback: (model) => {
             model.children.forEach((child) => {
                 child.material.forEach(function (material) {
@@ -172,7 +171,7 @@ const list = {
         }
     },
     'animated-tree': {
-        path: '../../../obj/lowpoly-tree-bones.glb',
+        path: './obj/lowpoly-tree-bones.glb',
         gltfLoader: true,
         callback: (gltf) => {
             const model = gltf.scene;
@@ -204,7 +203,7 @@ const list = {
         }
     },
     'animated-tree-level25': {
-        path: '../../../obj/lowpoly-tree-bones-level25.glb',
+        path: './obj/lowpoly-tree-bones-level25.glb',
         gltfLoader: true,
         callback: (gltf) => {
             const model = gltf.scene;
@@ -236,7 +235,7 @@ const list = {
         }
     },
     'animated-bird': {
-        path:  '../../../obj/bird-animated.glb',
+        path:  './obj/bird-animated.glb',
         gltfLoader: true,
         callback: (gltf) => {
             const model = gltf.scene;
