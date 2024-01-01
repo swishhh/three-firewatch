@@ -42,4 +42,5 @@ async function draw() {
 
     initSceneRenderer(scene, camera, renderer);
 }
+
 export {draw}

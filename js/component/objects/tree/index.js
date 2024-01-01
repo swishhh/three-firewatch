@@ -3,6 +3,7 @@ import {registryGet} from '../../../registry/registry.js';
 import {objectManager} from "../../../tools/object/manager.js";
 import {mergeMeshes} from "../../../tools/mesh/index.js";
 import {drawAnimated} from "./manager.js";
+import {InstancedManager} from "../../scene/InstancedManager.js";
 
 const MAP = [
     [0, 0, 0, 1],
@@ -73,40 +74,13 @@ const drawInstanced = (scene, camera, renderer) => {
     objectManager.get('animated-tree', (gltf) => {
         const model = gltf.scene;
         const group = model.getObjectByName('Cylinder');
-        const geometry = mergeMeshes(group.children)
-        const material = new THREE.MeshPhongMaterial({
-            reflectivity: false,
-            shininess: 0,
-            vertexColors: true
-        });
 
-        const instancedMesh = new THREE.InstancedMesh(geometry, material, MAP.length);
-
-        instancedMesh.castShadow = true;
-        instancedMesh.receiveShadow = true;
-
-        // todo: run draw animate, inherit matrix from animated objects, update instanced mesh with matrix
-        const dummy = new THREE.Object3D();
-        for (let i = 0; i < MAP.length; i++) {
-            let x,y,z,scale;
-            [x,y,z,scale] = [...MAP[i]]
-
-            if (y !== 0) {
-                console.log(MAP[i])
-            }
-            dummy.position.x = x;
-            dummy.position.y = y;
-            dummy.position.z = z;
-            dummy.scale.set(scale, scale, scale)
-
+        const instancedManager = new InstancedManager(scene, group.children, MAP)
+        instancedManager.setRelateCallback((dummy) => {
             terrain.relateY(dummy)
+        })
 
-            dummy.updateMatrix();
-
-            instancedMesh.setMatrixAt(i, dummy.matrix);
-        }
-
-        scene.add(instancedMesh)
+        instancedManager.draw();
     })
 }
 
