@@ -69,8 +69,8 @@ const relateY = function (object) {
 }
 
 const draw = (scene, camera, renderer) => {
-    const size = 50;
-    const segments = 120;
+    const size = 200;
+    const segments = 480;
 
     const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
     const material = new THREE.MeshStandardMaterial( { color: 0x888888 } )

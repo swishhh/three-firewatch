@@ -4,7 +4,7 @@ import { registryAdd } from "../../registry/registry.js";
 
 const smoothCamera = false;
 const minDistance = 3;
-const maxDistance = 25;
+const maxDistance = 50;
 const maxPolarAngle = (Math.PI / 2) - .15;
 
 const draw = (scene, camera, renderer) => {
