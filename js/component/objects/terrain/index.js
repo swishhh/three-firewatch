@@ -154,6 +154,9 @@ const draw = (scene, camera, renderer) => {
     addCircle(terrain, 8, 3, 2, .3);
     addCircle(terrain, 9, 4, 2, .2);
 
+    window.terrain = terrain;
+    terrain.geometry.attributes.position.needsUpdate = true;
+
     // water
     // addCircle(terrain, -3, 2, 1.7, .8, -1);
     // addCircle(terrain, -1.5, 3.5, 1.7, .6, -1);
@@ -209,23 +212,21 @@ const addCircle = (
     mod = 1
 ) => {
     const geometry = terrain.geometry;
+    const powRadius = Math.pow(radius, 2);
     for (let i = 0; i < geometry.vertices.length; i += 3) {
         let x = geometry.attributes.position.array[i];
         let z = geometry.attributes.position.array[i + 2];
 
         let val = Math.pow(x - centerX, 2) + Math.pow(z - centerZ, 2);
-        if (val < Math.pow(radius, 2)) {
+        if (val < powRadius) {
             let distance = Math.sqrt(val);
 
-            let newValue =  Math.sqrt(Math.pow(strength, 2) * Math.sqrt(Math.pow(radius, 2) - Math.pow(distance, 2)));
+            let newValue =  Math.sqrt(Math.pow(strength, 2) * Math.sqrt(powRadius - Math.pow(distance, 2)));
             let currValue = geometry.attributes.position.array[i + 1];
             geometry.attributes.position.array[i + 1] =
                 Math.abs(newValue) > Math.abs(currValue) * mod ? newValue * mod : currValue;
         }
     }
-
-    window.terrain = terrain;
-    terrain.geometry.attributes.position.needsUpdate = true;
     // terrain.geometry.computeVertexNormals();
 }
 

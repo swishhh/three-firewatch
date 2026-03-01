@@ -12,7 +12,7 @@ const gltfLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader();
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 500);
 const renderer = new THREE.WebGLRenderer({
     clearAlpha: 1,
     clearColor: 0xdddddd,
@@ -33,12 +33,10 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
-document.body.appendChild( renderer.domElement );
 
-camera.position.z = 10;
-camera.position.y = 10;
+camera.position.z = 15;
+camera.position.y = 15;
 camera.lookAt(scene);
-camera.fov = 60;
 window.camera = camera;
 
 await draw();
@@ -47,10 +45,11 @@ const clock = new THREE.Clock();
 
 function animate() {
     requestAnimationFrame(animate);
-    renderer.render( scene, camera );
-    let callbacks = getUpdateCallbacks();
+    renderer.render(scene, camera);
+    const delta = clock.getDelta();
+    const callbacks = getUpdateCallbacks();
     for (let i = 0; i < callbacks.length; i++) {
-        callbacks[i](clock.getDelta());
+        callbacks[i](delta);
     }
 }
 

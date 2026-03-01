@@ -2,9 +2,8 @@ import * as THREE from 'three';
 import {interactableAdd} from '../../../registry/interactableObjects.js';
 import {getGui, isVisible} from "../../../registry/datGui.js";
 import {addUpdateCallback} from '../../../registry/update.js';
-import {createSmoke} from "../smoke/index.js";
+import {createSmoke} from "../smoke";
 import {objectManager} from "../../../tools/object/manager.js";
-
 
 const draw = (scene, camera, renderer) => {
     objectManager.load('camp-fire', (model) => {
@@ -28,7 +27,6 @@ const draw = (scene, camera, renderer) => {
         campLight.blinkObject = {
             mod: 1
         };
-        campLight.dispose();
 
         const campGlowLightColor = 0x992600;
         const campGlowLight = new THREE.PointLight(campGlowLightColor, 3, .5);
@@ -36,7 +34,6 @@ const draw = (scene, camera, renderer) => {
         campGlowLight.decay = 5.2;
 
         campLight.glowLight = campGlowLight;
-        campGlowLight.dispose();
 
         campLight.blink = function () {
             let randStep = Math.random();

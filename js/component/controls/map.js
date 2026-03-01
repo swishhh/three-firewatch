@@ -19,7 +19,7 @@ const draw = (scene, camera, renderer) => {
     controls.maxDistance = maxDistance;
     controls.maxPolarAngle = maxPolarAngle;
 
-    addUpdateCallback(controls.update);
+    addUpdateCallback(controls.update.bind(controls));
     registryAdd('mapControls', controls);
 }
 

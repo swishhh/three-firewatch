@@ -21,14 +21,15 @@ class InstancedManager {
     }
     draw() {
         let instance = this._create();
-        this.scene.add(instance);
 
         if (this.instance) {
             this.scene.remove(this.instance);
+            this.instance.geometry.dispose()
+            this.instance.material.dispose()
         }
 
         this.instance = instance;
-        this.instance.geometry.dispose()
+        this.scene.add(instance);
     }
     _create() {
         const geometry = mergeMeshes(this.meshes);

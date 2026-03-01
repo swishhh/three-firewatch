@@ -79,10 +79,10 @@ const draw = (scene, camera, renderer) => {
         ]
     }
     snow.update = function () {
-        for (let i = 0; i < this.snowConfig.count * 3; i += 3) {
-            let velocity = this.geometry.attributes.velocity;
-            let positions = this.geometry.attributes.position;
-
+        const velocity = this.geometry.attributes.velocity;
+        const positions = this.geometry.attributes.position;
+        const limit = this.snowConfig.count * 3;
+        for (let i = 0; i < limit; i += 3) {
             positions.array[i] -= velocity.array[i];
             positions.array[i + 1] -= velocity.array[i + 1];
             positions.array[i + 2] -= velocity.array[i + 2];
