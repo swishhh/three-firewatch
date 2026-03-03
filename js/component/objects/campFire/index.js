@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {interactableAdd} from '../../../registry/interactableObjects.js';
 import {getGui, isVisible} from "../../../registry/datGui.js";
 import {addUpdateCallback} from '../../../registry/update.js';
-import {createSmoke} from "../smoke";
+import {createSmoke} from "../smoke/index.js";
 import {objectManager} from "../../../tools/object/manager.js";
 
 const draw = (scene, camera, renderer) => {
