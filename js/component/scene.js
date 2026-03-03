@@ -21,7 +21,10 @@ const components = {
     // 'fireCamp': './objects/fireCamp/index.js',
     'fog': './objects/fog/index.js',
     'light': './light.js',
-    'mapControls': './controls/map.js',
+
+    // 'mapControls': './controls/map.js',
+    'firstPersonControls': './controls/firstPerson.js',
+
     'resize': './resize/index.js',
     'mouse': './controls/mouse.js',
     'toolbar': './controls/toolbar.js',

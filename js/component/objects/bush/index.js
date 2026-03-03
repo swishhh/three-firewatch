@@ -7,6 +7,13 @@ const place = (x, y, z, scale, scene) => {
         model.position.y = y;
         model.position.z = z;
 
+        model.children.forEach((child) => {
+            child.recieveShadow = true;
+            child.castShadow = true;
+        });
+        model.recieveShadow = true;
+        model.castShadow = true;
+
         interactableAdd(model.uuid, model)
         scene.add(model)
     });

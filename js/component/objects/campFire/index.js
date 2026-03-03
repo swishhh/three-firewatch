@@ -8,6 +8,10 @@ import {objectManager} from "../../../tools/object/manager.js";
 const draw = (scene, camera, renderer) => {
     objectManager.load('camp-fire', (model) => {
         model.scale.set(.7, .7, .7);
+        model.children.forEach((child) => {
+            child.recieveShadow = true;
+            child.castShadow = true;
+        });
 
         interactableAdd(model.uuid, model)
 

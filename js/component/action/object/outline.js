@@ -4,7 +4,7 @@ import {RenderPass} from "../../../../lib/addons/postprocessing/RenderPass.js";
 import {OutlinePass} from "../../../../lib/addons/postprocessing/OutlinePass.js";
 import {ShaderPass} from "../../../../lib/addons/postprocessing/ShaderPass.js";
 import {FXAAShader} from "../../../../lib/addons/shaders/FXAAShader.js";
-import {addUpdateCallback} from "../../../registry/update.js";
+import {registryAdd} from "../../../registry/registry.js";
 import {addResizeCallback} from "../../../registry/resize.js";
 
 let outlinePass;
@@ -45,7 +45,7 @@ const draw = (scene, camera, renderer) => {
     outlinePass.edgeStrength = 2;
     outlinePass.pulsePeriod = 0;
 
-    addUpdateCallback(composer.render.bind(composer));
+    registryAdd('composer', composer);
 
     const resizeCallback = () => {
         const width = window.innerWidth;

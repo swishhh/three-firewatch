@@ -7,10 +7,10 @@ import {addUpdateCallback} from '../../../registry/update.js';
 const SHARPNESS = 15;
 const MAX_SIZE = .1;
 const MIN_SIZE = .05;
-const SPEED = 3;
+const SPEED = 0.7;
 const DISTANCE = 9;
-const AMPLITUDE = .1;
-const FREQUENCY = .6;
+const AMPLITUDE = .2;
+const FREQUENCY = .8;
 const COUNT = 20;
 const SALT = .4;
 const FADE_AWAY = true;
@@ -18,8 +18,6 @@ const OPACITY = .5;
 const MIN_OPACITY = .4;
 const RANDOMIZE_OPACITY = true;
 const COLOR = 0x000000;
-
-// todo randomize initial opacity
 
 const makeSmokeParticle = (sphereMesh, salt = 1) => {
     sphereMesh.smokeConfig = {

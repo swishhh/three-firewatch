@@ -1,6 +1,6 @@
 import {addUpdateCallback} from "../../registry/update.js";
 
-const DISTANCE = 1400;
+const DISTANCE = 3000;
 
 const initSceneRenderer = (scene, camera, renderer) => {
     addUpdateCallback(() => {

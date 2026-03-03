@@ -2,8 +2,11 @@ import * as THREE from 'three';
 import { registryAdd } from "../../../registry/registry.js";
 import {mergeVertices} from '../../../../lib/addons/jsm/utils/BufferGeometryUtils.js';
 import {registryGet} from '../../../registry/registry.js';
+import {getGui, isVisible} from "../../../registry/datGui.js";
 
 let scene = registryGet('scene');
+
+const TERRAIN_COLOR_WARM_GREEN = 0x002409;
 
 const showGrid = function (visible) {
     if (visible) {
@@ -73,13 +76,14 @@ const draw = (scene, camera, renderer) => {
     const segments = 480;
 
     const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
-    const material = new THREE.MeshStandardMaterial( { color: 0x888888 } )
-    // const material = new THREE.MeshStandardMaterial( { color: 0x1d3825 } )
+    const material = new THREE.MeshStandardMaterial( { color: TERRAIN_COLOR_WARM_GREEN } )
     const terrain = new THREE.Mesh(geometry, material);
+
+    const terrainGUI = getGui().addFolder('Terrain');
+    terrainGUI.addColor({color: material.color.getHex()}, 'color').onChange((value) => material.color.set(value));
 
     geometry.rotateX(Math.PI * -0.5);
     terrain.receiveShadow = true;
-    terrain.castShadow = true;
     terrain.showGrid = showGrid;
 
     terrain.relativity = {};
@@ -153,6 +157,14 @@ const draw = (scene, camera, renderer) => {
     addCircle(terrain, 8, 2, 2, .25);
     addCircle(terrain, 8, 3, 2, .3);
     addCircle(terrain, 9, 4, 2, .2);
+
+    addCircle(terrain, 15, 15, 5, .25);
+    addCircle(terrain, 14, 14, 4, .25);
+    addCircle(terrain, 12, 12, 4, .25);
+    addCircle(terrain, 12, 13, 4, .25);
+    addCircle(terrain, 15, 11, 4, .25);
+    addCircle(terrain, 13, 13, 4, .7);
+    addCircle(terrain, 9, 13, 2, .7);
 
     window.terrain = terrain;
     terrain.geometry.attributes.position.needsUpdate = true;

@@ -18,7 +18,7 @@ const addShadowLight = (x, y, z, color, intensity) => {
     light.shadow.camera.bottom = - d;
     light.shadow.camera.near = .1;
     light.shadow.camera.far = 200;
-    light.shadow.bias = 0;
+    light.shadow.bias = -0.000001;
     light.shadow.mapSize.width = 2048;
     light.shadow.mapSize.height = 2048;
     light.shadow.radius = 3;
