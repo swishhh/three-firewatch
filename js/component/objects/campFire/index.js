@@ -72,7 +72,7 @@ const draw = (scene, camera, renderer) => {
             sound.setRefDistance(1);
             sound.setRolloffFactor(3);
             sound.setLoop(true);
-            sound.setVolume(.2);
+            sound.setVolume(.5);
             sound.play();
         });
         model.add(sound);

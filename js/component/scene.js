@@ -22,12 +22,13 @@ const components = {
     'fog': './objects/fog/index.js',
     'light': './light.js',
 
-    'mapControls': './controls/map.js',
-    // 'firstPersonControls': './controls/firstPerson.js',
+    // 'mapControls': './controls/map.js',
+    'firstPersonControls': './controls/firstPerson.js',
 
     'resize': './resize/index.js',
     'mouse': './controls/mouse.js',
     'mouseSelect': './controls/mouse/select.js',
+    'selectionPanel': './controls/selectionPanel.js',
     'toolbar': './controls/toolbar.js',
     'object': './controls/object.js',
     'outline': './action/object/outline.js',

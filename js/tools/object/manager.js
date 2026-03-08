@@ -202,6 +202,22 @@ const list = {
             model.distanceRender = true;
         }
     },
+    'tree': {
+        path: './obj/tree.obj',
+        callback: (model) => {
+            model.traverse((child) => {
+                console.log(child.name)
+                if (child.material) {
+                    child.material.color = new THREE.Color(child.name === 'Cylinder_Leaves' ? '#0a1f00' : '#241302');
+                    child.receiveShadow = true;
+                    child.castShadow = true;
+                    child.material.shininess = 0;
+                    child.material.reflectivity = false;
+                }
+            })
+            model.distanceRender = true;
+        }
+    },
     'animated-tree-level25': {
         path: './obj/lowpoly-tree-bones-level25.glb',
         gltfLoader: true,

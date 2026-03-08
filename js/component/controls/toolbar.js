@@ -1,7 +1,8 @@
 import {getGui} from "../../registry/datGui.js";
 import {localStorageGet, localStorageSet} from "../../tools/local/storage.js";
 import {Toolbar} from "./toolbar/Toolbar.js";
-import {push} from "../objects/grass/index.js";
+import {push as pushGrass} from "../objects/grass/index.js";
+import {push as pushTree} from "../objects/tree/index.js";
 
 const ENABLED = false;
 
@@ -27,6 +28,9 @@ const draw = (scene, camera, renderer) => {
     let christmasTree = treeFolder.addItem('christmasTree');
     christmasTree.setLabel('Christmas');
     christmasTree.setIcon('tree')
+    christmasTree.onClick(() => {
+        pushTree(5, 0, 5, 1);
+    })
 
     let bush = plantsFolder.addFolder('bushes');
     bush.setIcon('bush');
@@ -36,7 +40,7 @@ const draw = (scene, camera, renderer) => {
     grassItem.setLabel('Grass');
     grassItem.setIcon('grass');
     grassItem.onClick(() => {
-        push(5,0,5, 1);
+        pushGrass(5,0,5, 1);
     })
 
     toolbar.init();

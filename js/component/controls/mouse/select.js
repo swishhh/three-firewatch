@@ -4,6 +4,11 @@ import { outline, removeOutline } from "../../action/object/outline.js";
 import { registryGet } from "../../../registry/registry.js";
 
 let selected = null;
+let selectCallbacks = [];
+
+const onSelectChange = (callback) => {
+    selectCallbacks.push(callback);
+}
 
 const select = (object, forceUnselect = false) => {
     if (object) {
@@ -21,6 +26,7 @@ const select = (object, forceUnselect = false) => {
         removeOutline(selected);
         selected = null;
     }
+    selectCallbacks.forEach(cb => cb(selected));
 }
 
 const unselect = () => {
@@ -67,4 +73,4 @@ const draw = (scene, camera, renderer) => {
     });
 }
 
-export {select, unselect, isSelected, getSelected, draw}
+export {select, unselect, isSelected, getSelected, onSelectChange, draw}

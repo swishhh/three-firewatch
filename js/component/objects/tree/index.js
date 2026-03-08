@@ -1,9 +1,7 @@
-import * as THREE from 'three';
 import {registryGet} from '../../../registry/registry.js';
 import {objectManager} from "../../../tools/object/manager.js";
-import {mergeMeshes} from "../../../tools/mesh/index.js";
-import {drawAnimated} from "./manager.js";
 import {InstancedManager} from "../../scene/InstancedManager.js";
+import {interactableAdd} from "../../../registry/interactableObjects.js";
 
 const MAP = [
     [0, 0, 0, 1],
@@ -66,10 +64,6 @@ const MAP = [
 ];
 
 const draw = (scene, camera, renderer) => {
-    // for (let i = 0; i < MAP.length; i++) {
-    //     drawAnimated(...MAP[i])
-    // }
-
     drawInstanced(scene, camera, renderer);
 }
 
@@ -89,4 +83,16 @@ const drawInstanced = (scene, camera, renderer) => {
     })
 }
 
-export {draw}
+const push = (x,y,z,scale) => {
+    objectManager.get('tree', (model) => {
+        console.log(model)
+        model.position.set(x,y,z);
+        model.scale.set(scale,scale,scale)
+
+        registryGet('scene').add(model);
+        interactableAdd(model.uuid, model)
+        registryGet('dragControls').getObjects().push(model);
+    })
+}
+
+export {draw, push}
