@@ -170,6 +170,7 @@ const draw = (scene, camera, renderer) => {
     terrain.geometry.attributes.position.needsUpdate = true;
 
     // water
+    // addCircle(terrain, 5, 5, 2, 0.8, -1);
     // addCircle(terrain, -3, 2, 1.7, .8, -1);
     // addCircle(terrain, -1.5, 3.5, 1.7, .6, -1);
     // addCircle(terrain, .5, 4, 1.7, .6, -1);

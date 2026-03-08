@@ -1,6 +1,7 @@
 import {getGui} from "../../registry/datGui.js";
 import {localStorageGet, localStorageSet} from "../../tools/local/storage.js";
 import {Toolbar} from "./toolbar/Toolbar.js";
+import {push} from "../objects/grass/index.js";
 
 const ENABLED = false;
 
@@ -30,6 +31,13 @@ const draw = (scene, camera, renderer) => {
     let bush = plantsFolder.addFolder('bushes');
     bush.setIcon('bush');
     bush.setLabel('Bushes');
+
+    let grassItem = bush.addItem('grass');
+    grassItem.setLabel('Grass');
+    grassItem.setIcon('grass');
+    grassItem.onClick(() => {
+        push(5,0,5, 1);
+    })
 
     toolbar.init();
 

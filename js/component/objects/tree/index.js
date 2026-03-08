@@ -62,6 +62,7 @@ const MAP = [
     [10, 0, 10, 1],
     [8.5, 0, 13, 0.8],
     [15, 0, 9, 1.6],
+    [7, 0, 2.5, 0.7],
 ];
 
 const draw = (scene, camera, renderer) => {

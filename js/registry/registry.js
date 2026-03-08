@@ -20,4 +20,8 @@ const registryGet = (key) => {
     return storage[key];
 }
 
-export {registryAdd, registryGet}
+const registryDelete = (key) => {
+    delete storage[key];
+}
+
+export {registryAdd, registryGet, registryDelete}

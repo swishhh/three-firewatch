@@ -20,7 +20,7 @@ const draw = (scene, camera, renderer) => {
         roughness: 1,
         envMapIntensity: 0.9,
         transparent: true,
-        opacity: .95,
+        opacity: .25,
         reflectivity: 1,
         ior: 0.9,
         side: THREE.FrontSide,
@@ -33,13 +33,13 @@ const draw = (scene, camera, renderer) => {
 
     water.receiveShadow = true;
     water.castShadow = true;
-    water.position.y = -.4;
+    water.position.y = -.45;
 
     scene.add(water);
 
     // addGUI(water);
 
-    const waterFactor = 0.002;
+    const waterFactor = 0.0002;
     const maxY = .15;
     const minY = 0;
 

@@ -6,6 +6,9 @@ import {createSmoke} from "../smoke/index.js";
 import {objectManager} from "../../../tools/object/manager.js";
 
 const draw = (scene, camera, renderer) => {
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
+
     objectManager.load('camp-fire', (model) => {
         model.scale.set(.7, .7, .7);
         model.children.forEach((child) => {
@@ -62,6 +65,17 @@ const draw = (scene, camera, renderer) => {
 
         addUpdateCallback(campLight.blink.bind(campLight))
 
+        const sound = new THREE.PositionalAudio(listener);
+        const audioLoader = new THREE.AudioLoader();
+        audioLoader.load('sound/campFire/sound.mp3', (buffer) => {
+            sound.setBuffer(buffer);
+            sound.setRefDistance(1);
+            sound.setRolloffFactor(3);
+            sound.setLoop(true);
+            sound.setVolume(.2);
+            sound.play();
+        });
+        model.add(sound);
 
         // smoke simulation
 
