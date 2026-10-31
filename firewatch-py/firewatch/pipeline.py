@@ -3,13 +3,15 @@
 1. depth prepass            -> depth, normals (lighting mask, depth of field)
 2. ao.frag                  -> lighting mask: AO, contact shadows, sun shadow; then a 4x4 blur
 3. scene (MSAA, HDR float)  -> scene          (lighting reads the mask from step 2)
-4. bloom_down / bloom_up    -> bloom          (6-level downsample chain + tent upsample)
+4. bloom                    -> bloom          Fast: one thresholded half-res pass whose mipmaps post.frag
+                                              blends; High: 6-level downsample chain + tent upsample
 5. dof.frag                 -> blurred scene  (only while depth of field is on)
 6. post.frag                -> graded LDR     (tone mapping, white balance, contrast, ...)
 7. final.frag               -> window         (FXAA, sharpen, vignette, grain, dither)
 
-Every buffer scales with the window and the render scale. Changing MSAA, render scale or AO
-resolution rebuilds the buffers; everything else only updates shader inputs.
+Every buffer scales with the window and the render scale. Changing MSAA, render scale, AO
+resolution or bloom quality rebuilds the buffers; everything else only updates shader inputs.
+Passes nothing reads are switched off (each active pass costs CPU time even when it draws little).
 """
 import math
 
@@ -21,7 +23,7 @@ from . import registry, settings, shading
 from .update import add_update_callback
 
 BLOOM_LEVELS = 6
-REBUILD_KEYS = {'gfx.msaa', 'gfx.render_scale', 'gfx.ao_resolution'}
+REBUILD_KEYS = {'gfx.msaa', 'gfx.render_scale', 'gfx.ao_resolution', 'gfx.bloom_quality'}
 TONEMAPS = {'none': 0, 'reinhard': 1, 'aces': 2, 'agx': 3, 'filmic': 4}
 
 
@@ -56,6 +58,9 @@ class Pipeline(DirectObject):
 
         self.build()
         settings.subscribe(self._changed, 'gfx.')
+        world = registry.get('world')
+        if world is not None:
+            world.add_listener(lambda section: self.apply_settings() if section in ('water', 'loaded') else None)
         self.accept('window-event', lambda _window: self._apply_sizes())
         add_update_callback(self.update)
 
@@ -82,8 +87,10 @@ class Pipeline(DirectObject):
 
         self.ao_raw = _texture('ao-raw')
         self.ao_quad = self._pass('ao', ao_scale, self.ao_raw, 'ao')
+        self.ao_buffer = manager.buffers[-1]
         self.ao = _texture('ao')
         self.ao_blur_quad = self._pass('ao-blur', ao_scale, self.ao, 'ao_blur', source=self.ao_raw)
+        self.ao_blur_buffer = manager.buffers[-1]
         for quad in (self.ao_quad, self.ao_blur_quad):
             quad.set_shader_input('depth_texture', self.depth)
         self.ao_quad.set_shader_input('normal_texture', self.normals)
@@ -95,24 +102,37 @@ class Pipeline(DirectObject):
         self.final_quad = manager.renderSceneInto(colortex=self.scene, fbprops=_float_buffer(settings.get('gfx.msaa')))
         manager.sizes[-1] = (scale, 1, 1)
 
-        source, self.bloom_down = self.scene, []
-        for level in range(BLOOM_LEVELS):
-            texture = _texture(f'bloom-down-{level}')
-            quad = self._pass(f'bloom-down-{level}', scale / 2 ** (level + 1), texture, 'bloom_down', float_color=True,
-                              source=source, first_pass=1.0 if level == 0 else 0.0)
-            self.bloom_down.append((quad, texture))
-            source = texture
-        lower, self.bloom_up = source, []
-        for level in reversed(range(BLOOM_LEVELS - 1)):
-            texture = _texture(f'bloom-up-{level}')
-            quad = self._pass(f'bloom-up-{level}', scale / 2 ** (level + 1), texture, 'bloom_up', float_color=True,
-                              current=self.bloom_down[level][1], lower=lower)
-            self.bloom_up.append(quad)
-            lower = texture
-        self.bloom = lower
+        self.bloom_buffers = []
+        if settings.get('gfx.bloom_quality') == 'fast':
+            # One thresholded half-resolution pass; the GPU builds its mipmaps and post.frag blends them.
+            self.bloom = _texture('bloom-bright')
+            self.bloom.set_minfilter(SamplerState.FT_linear_mipmap_linear)
+            quad = self._pass('bloom-bright', scale / 2, self.bloom, 'bloom_down', float_color=True,
+                              source=self.scene, first_pass=1.0)
+            self.bloom_down, self.bloom_up = [(quad, self.bloom)], []
+            self.bloom_buffers.append(manager.buffers[-1])
+        else:
+            source, self.bloom_down = self.scene, []
+            for level in range(BLOOM_LEVELS):
+                texture = _texture(f'bloom-down-{level}')
+                quad = self._pass(f'bloom-down-{level}', scale / 2 ** (level + 1), texture, 'bloom_down',
+                                  float_color=True, source=source, first_pass=1.0 if level == 0 else 0.0)
+                self.bloom_down.append((quad, texture))
+                self.bloom_buffers.append(manager.buffers[-1])
+                source = texture
+            lower, self.bloom_up = source, []
+            for level in reversed(range(BLOOM_LEVELS - 1)):
+                texture = _texture(f'bloom-up-{level}')
+                quad = self._pass(f'bloom-up-{level}', scale / 2 ** (level + 1), texture, 'bloom_up', float_color=True,
+                                  current=self.bloom_down[level][1], lower=lower)
+                self.bloom_up.append(quad)
+                self.bloom_buffers.append(manager.buffers[-1])
+                lower = texture
+            self.bloom = lower
 
         self.dof = _texture('dof')
         self.dof_quad = self._pass('dof', scale / 2, self.dof, 'dof', float_color=True, source=self.scene)
+        self.dof_buffer = manager.buffers[-1]
 
         self.ldr = _texture('ldr')
         self.post_quad = self._pass('post', scale, self.ldr, 'post', scene=self.scene, bloom=self.bloom,
@@ -158,15 +178,16 @@ class Pipeline(DirectObject):
         lens = self.app.camLens
         near_far = Vec2(lens.get_near(), lens.get_far())
 
-        # Skip passes nothing reads. Buffer order: prepass, AO, AO blur, scene, bloom..., DoF, post.
-        buffers = self.manager.buffers
-        bloom_count = BLOOM_LEVELS * 2 - 1
-        self.prepass.set_active(mask or dof)
-        for buffer in buffers[1:3]:
-            buffer.set_active(mask)
-        for buffer in buffers[4:4 + bloom_count]:
+        # Skip passes nothing reads. Water reads the prepass depth for its depth and shore lines.
+        world = registry.get('world')
+        water = bool(world is not None and any(body.node is not None for body in world.water))
+        self.prepass.set_active(mask or dof or water)
+        self.app.render.set_shader_input('depth_available', 1.0 if mask or dof or water else 0.0)
+        self.ao_buffer.set_active(mask)
+        self.ao_blur_buffer.set_active(mask)
+        for buffer in self.bloom_buffers:
             buffer.set_active(bloom)
-        buffers[4 + bloom_count].set_active(dof)
+        self.dof_buffer.set_active(dof)
 
         for node_path in (self.ao_quad, self.ao_blur_quad, self.post_quad, self.app.render):
             node_path.set_shader_input('near_far', near_far)
@@ -191,6 +212,7 @@ class Pipeline(DirectObject):
 
         post = {
             'bloom_enabled': 1.0 if bloom else 0.0, 'bloom_intensity': get('gfx.bloom_intensity'),
+            'bloom_fast': 1.0 if get('gfx.bloom_quality') == 'fast' else 0.0, 'bloom_radius': get('gfx.bloom_radius'),
             'dof_enabled': 1.0 if dof else 0.0, 'dof_focus': get('gfx.dof_focus'), 'dof_range': get('gfx.dof_range'),
             'exposure': get('gfx.exposure'), 'tonemap': TONEMAPS[get('gfx.tonemap')],
             'temperature': get('gfx.temperature'), 'tint': get('gfx.tint'), 'saturation': get('gfx.saturation'),

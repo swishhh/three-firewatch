@@ -14,6 +14,9 @@ class MeshPart:
     normals: np.ndarray    # (n, 3) float32
     indices: np.ndarray    # (m,) uint32, triangle list
     color: tuple = (1.0, 1.0, 1.0, 1.0)
+    uvs: np.ndarray = None  # (n, 2) float32 texture coordinates (Panda: v up), or None
+    texture: str = ''       # image file of the material's base color texture (absolute path), or ''
+    double_sided: bool = False
 
 
 _formats = {}
@@ -33,10 +36,14 @@ VERTEX = ('vertex', 3, Geom.C_point)
 NORMAL = ('normal', 3, Geom.C_normal)
 COLOR = ('color', 4, Geom.C_color)
 SWAY = ('sway', 2, Geom.C_other)  # (weight, phase) for the wind sway in shaders/common.glsl
+TEXCOORD = ('texcoord', 2, Geom.C_texcoord)  # p3d_MultiTexCoord0
 
 
-def make_geom(positions, normals, indices, colors=None, sway=None):
+def make_geom(positions, normals, indices, colors=None, sway=None, uvs=None):
     columns, arrays = [VERTEX, NORMAL], [positions, normals]
+    if uvs is not None:
+        columns.append(TEXCOORD)
+        arrays.append(uvs)
     if colors is not None:
         columns.append(COLOR)
         arrays.append(colors)

@@ -8,6 +8,7 @@ from .paths import shader
 MAIN_CAMERA_MASK = BitMask32.bit(0)
 SHADOW_CAMERA_MASK = BitMask32.bit(1)
 PREPASS_CAMERA_MASK = BitMask32.bit(2)
+SNOW_CAMERA_MASK = BitMask32.bit(4)  # the top-down surface map snow settles on (components/snow.py)
 
 _shaders = {}
 
@@ -37,13 +38,27 @@ def init(app):
         'unlit': 0.0, 'shininess': 0.0, 'roughness': 0.0, 'receive_shadow': 1.0, 'specular_scale': 1.0,
         'snow_cover': 0.0, 'sway_amount': 0.0, 'wind_direction': (1, 0, 0), 'wind_strength': 0.0,
         'hemi_sky': (1, 1, 1), 'hemi_ground': (1, 1, 1), 'hemi_intensity': 0.0,
-        'sun_direction': (0, 0, 1), 'sun_color': (0, 0, 0), 'use_fog': 0.0, 'fog_color': (0, 0, 0), 'fog_density': 0.0,
+        'sun_direction': (0, 0, 1), 'sun_color': (0, 0, 0), 'moon_direction': (0, 0, 1), 'moon_color': (0, 0, 0),
+        'sun_casts': 1.0, 'moon_casts': 0.0, 'paint_base': (0, 0, 0, 0), 'depth_available': 0.0,
+        'reflect_sky_top': (.5, .6, .8), 'reflect_sky_horizon': (.7, .7, .7), 'use_fog': 0.0, 'fog_color': (0, 0, 0), 'fog_density': 0.0,
         'ao_texture': white, 'ao_enabled': 0.0, 'ao_direct': 0.0, 'screen_size': (1, 1),
         'depth_texture': white, 'near_far': (0.1, 500),
-        'fire_shadow_enabled': 0.0, 'fire_shadow_softness': 0.0, 'fire_shadow_position': (0, 0, 0),
+        'fire_shadow_softness': 0.0,
+        'flash_shadow_softness': 1.5, 'flash_shadow_texel': 1 / 1024,
+        'snow_map': white, 'snow_map_area': (0, 0, 1, 1), 'snow_map_depth': (0, 1, 2), 'snow_settle': 0.0,
+        'snow_melt': 3.0, 'settled_color': (1, 1, 1, 1), 'snow_shape': 0, 'snow_softness': .5, 'snow_spin': 0.0,
+        'snow_streak': 0.0,
     }
     for name, value in defaults.items():
         render.set_shader_input(name, value)
+    from . import point_shadow, spot_shadow
+    empty_cube = point_shadow.empty_cube_map()
+    for slot in range(point_shadow.SLOTS):
+        render.set_shader_input(f'fire_shadow_map{slot}', empty_cube)
+        render.set_shader_input(f'fire_shadow_position{slot}', (0, 0, -1000))
+        render.set_shader_input(f'fire_shadow_enabled{slot}', 0.0)
+    spot_shadow.get(app)  # binds the flashlight shadow inputs (and owns its buffer)
+    point_shadow.get(app)  # point light shadow maps, handed to the nearest shadow-casting point lights
 
 
 def depth_state(reverse_cull=False):
@@ -93,8 +108,17 @@ def set_cast_shadow(node_path, cast):
 
 
 def set_in_depth_prepass(node_path, included):
-    """Transparent and unlit things stay out of the prepass that AO and contact shadows read."""
+    """Transparent and unlit things stay out of the prepass that AO and contact shadows read, and out
+    of the surface map snow settles on."""
     if included:
-        node_path.show(PREPASS_CAMERA_MASK)
+        node_path.show(PREPASS_CAMERA_MASK | SNOW_CAMERA_MASK)
     else:
-        node_path.hide(PREPASS_CAMERA_MASK)
+        node_path.hide(PREPASS_CAMERA_MASK | SNOW_CAMERA_MASK)
+
+
+def set_snow_catcher(node_path, catches):
+    """Whether snow settles on this node (held items, for one, don't catch it)."""
+    if catches:
+        node_path.show(SNOW_CAMERA_MASK)
+    else:
+        node_path.hide(SNOW_CAMERA_MASK)

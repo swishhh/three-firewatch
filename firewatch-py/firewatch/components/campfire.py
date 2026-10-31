@@ -1,4 +1,6 @@
-"""Port of js/component/objects/campFire/index.js: flickering lights, crackling sound and smoke."""
+"""Port of js/component/objects/campFire/index.js: flickering lights, crackling sound and smoke.
+
+A world object of kind 'campfire' (world/entities.py) gets a CampfireRig on its model."""
 import io
 import random
 import wave
@@ -7,12 +9,12 @@ import numpy as np
 from direct.showbase.Audio3DManager import Audio3DManager
 from panda3d.core import Datagram, MovieAudio, PointLight, VirtualFileMountRamdisk, VirtualFileSystem
 
-from .. import interactables, objects, registry, settings, shading
+from .. import settings, shading
 from ..coords import three_to_panda
 from ..paths import asset, panda_filename
-from ..point_shadow import PointShadow
-from ..update import add_update_callback, fixed_step
-from .smoke import create_smoke
+from ..update import add_update_callback, fixed_step, remove_update_callback
+from .fire import Flames
+from .smoke import Smoke
 
 BLINK_STEP_MIN = 0.01
 BLINK_STEP_MAX = 0.02
@@ -79,58 +81,99 @@ def load_mono(path):
     return filename
 
 
-def add_sound(app, model):
-    try:
-        audio = Audio3DManager(app.sfxManagerList[0], app.camera)
-        sound = audio.load_sfx(load_mono(asset('sound/campFire/sound.mp3')))
-    except Exception as error:  # no audio device should not stop the scene
-        print(f'campfire sound disabled: {error}')
-        return
+class CampfireRig:
+    """Lights (the first two campfires get them), crackling sound and smoke for a campfire world object
+    (its shadow map comes from point_shadow.PointShadows). `model` is its root node."""
 
-    # Panda's OpenAL distance model is the Web Audio 'inverse' model three's PositionalAudio used.
-    audio.attach_sound_to_object(sound, model)
-    audio.set_sound_min_distance(sound, 1)  # setRefDistance(1)
-    audio.set_drop_off_factor(3)  # setRolloffFactor(3)
-    sound.set_loop(True)
-    sound.play()
+    instances = []
 
-    def apply_volume(_keys=None):
-        sound.set_volume(settings.get('env.fire_volume'))
-        app.sfxManagerList[0].set_volume(settings.get('env.master_volume'))
+    def __init__(self, app, model):
+        self.app = app
+        self.model = model
+        self.lights = []
+        self.shadow = None
+        self.sound = None
+        self.audio = None
+        index = len(CampfireRig.instances)
+        CampfireRig.instances.append(self)
 
-    settings.subscribe(apply_volume, 'env.')
-    apply_volume()
+        if index < 2:
+            # Colors, intensities (2 and 3), distances (10 and .5) and decays (.9 and 5.2) are settings.
+            camp_light = PointLight('camp-light')
+            camp_light_path = model.attach_new_node(camp_light)
+            camp_light_path.set_pos(three_to_panda(0, .8, 0))
+            glow_light = PointLight('camp-glow-light')
+            glow_light_path = model.attach_new_node(glow_light)
+            glow_light_path.set_pos(three_to_panda(0, .75, 0))
+            for path in (camp_light_path, glow_light_path):
+                app.render.set_light(path)
+                self.lights.append(path)
+            self.blink = Blink(camp_light, glow_light)
+            self.blink.apply()
+            settings.subscribe(self._apply, 'env.')
+            self._step = fixed_step(self.blink)
+            add_update_callback(self._step)
+            # campLight.castShadow = true: point_shadow.PointShadows gives it a shadow map.
 
+        self._add_sound()
+        self.flames = Flames(app, model)
+        self.smoke = Smoke(app, app.render, self._smoke_origin())
+        settings.subscribe(self._smoke_moved, 'env.smoke_offset')
 
-def draw(app):
-    model = objects.get('camp-fire')
-    model.set_scale(.7)
-    model.set_pos(three_to_panda(2.7, 0, -2.5))
-    # The JS set `recieveShadow` (sic), so the campfire never received shadows.
-    shading.set_receive_shadow(model, False)
-    interactables.add(model)
+    def _smoke_origin(self):
+        # The JS started the smoke at the model's scale plus half a meter above its base; the World tab's
+        # smoke offsets move it from there (world axes, meters).
+        position = self.model.get_pos(self.app.render)
+        get = settings.get
+        return (position.x + get('env.smoke_offset_x'), position.y + get('env.smoke_offset_y'),
+                position.z + self.model.get_sz(self.app.render) + .5 + get('env.smoke_offset_z'))
 
-    # Colors, intensities (2 and 3), distances (10 and .5) and decays (.9 and 5.2) are settings.
-    camp_light = PointLight('camp-light')
-    camp_light_path = model.attach_new_node(camp_light)
-    camp_light_path.set_pos(three_to_panda(0, .8, 0))
+    def _smoke_moved(self, _keys=None):
+        self.smoke.move_to(self._smoke_origin())
 
-    glow_light = PointLight('camp-glow-light')
-    glow_light_path = model.attach_new_node(glow_light)
-    glow_light_path.set_pos(three_to_panda(0, .75, 0))
+    def _apply(self, _keys=None):
+        self.blink.apply()
 
-    app.render.set_light(camp_light_path)
-    app.render.set_light(glow_light_path)
+    def moved(self):
+        """Smoke starts where the fire is (lights and shadow follow the model by themselves)."""
+        self.smoke.move_to(self._smoke_origin())
 
-    # campLight.castShadow = true; reaches as far as the light's default distance.
-    registry.add('fireShadow', PointShadow(app, camp_light_path, far=12))
+    def _add_sound(self):
+        app = self.app
+        try:
+            self.audio = Audio3DManager(app.sfxManagerList[0], app.camera)
+            self.sound = self.audio.load_sfx(load_mono(asset('sound/campFire/sound.mp3')))
+        except Exception as error:  # no audio device should not stop the scene
+            print(f'campfire sound disabled: {error}')
+            self.sound = None
+            return
+        # Panda's OpenAL distance model is the Web Audio 'inverse' model three's PositionalAudio used.
+        self.audio.attach_sound_to_object(self.sound, self.model)
+        self.audio.set_sound_min_distance(self.sound, 1)  # setRefDistance(1)
+        self.audio.set_drop_off_factor(3)  # setRolloffFactor(3)
+        self.sound.set_loop(True)
+        self.sound.play()
+        settings.subscribe(self._apply_volume, 'env.')
+        self._apply_volume()
 
-    blink = Blink(camp_light, glow_light)
-    blink.apply()
-    settings.subscribe(lambda _keys: blink.apply(), 'env.')
-    add_update_callback(fixed_step(blink))
+    def _apply_volume(self, _keys=None):
+        if self.sound is not None:
+            self.sound.set_volume(settings.get('env.fire_volume'))
+            self.app.sfxManagerList[0].set_volume(settings.get('env.master_volume'))
 
-    add_sound(app, model)
-
-    model.reparent_to(app.render)
-    create_smoke(app, 2.7, .7 + .5, -2.5)
+    def destroy(self):
+        if self in CampfireRig.instances:
+            CampfireRig.instances.remove(self)
+        for path in self.lights:
+            self.app.render.clear_light(path)
+            path.remove_node()
+        if self.lights:
+            settings.unsubscribe(self._apply)
+            remove_update_callback(self._step)
+        if self.sound is not None:
+            settings.unsubscribe(self._apply_volume)
+            self.audio.detach_sound(self.sound)
+            self.sound.stop()
+        settings.unsubscribe(self._smoke_moved)
+        self.flames.destroy()
+        self.smoke.destroy()

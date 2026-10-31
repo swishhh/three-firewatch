@@ -1,128 +1,118 @@
-"""Port of js/component/objects/smoke/index.js: small black spheres rising along sine curves."""
+"""Campfire smoke, after js/component/objects/smoke/index.js: small spheres rising along sine curves,
+bent by the wind, fading as they rise.
+
+A continuous emitter: every puff runs the same rise over and over, offset in time so the puffs are
+spread evenly along the column (the JS released all of them in the first few seconds, so its smoke
+came out in one clump followed by a long gap). Amount, size, rise speed and height, sway, growth,
+color and opacity are World tab settings (env.smoke_*).
+"""
 import math
 import random
 
-from panda3d.core import GeomNode, TransparencyAttrib, Vec3
+from panda3d.core import GeomNode, Point3, TransparencyAttrib, Vec3
 
 from .. import settings, shading
 from ..colors import rgba
-from ..coords import three_to_panda
 from ..geometry import make_geom, sphere
-from ..update import add_update_callback
+from ..update import add_update_callback, remove_update_callback
 
-SHARPNESS = 15
-MAX_SIZE = .1
-MIN_SIZE = .05
-SPEED = 0.7
-DISTANCE = 9
-AMPLITUDE = .2
-FREQUENCY = .8
-COUNT = 20
-SALT = .4
-FADE_AWAY = True
-OPACITY = .5
-MIN_OPACITY = .4
-RANDOMIZE_OPACITY = True
-WIND_LEAN = .25
+SHARPNESS = 15  # sphere segments
+MIN_SIZE, MAX_SIZE = .05, .1  # the JS puff radii, before the size setting
+BASE_SPEED = .42  # m/s at "rise speed" 1 (the JS: 0.007 per 60 fps frame)
+MIN_OPACITY, MAX_OPACITY = .4, .5  # the JS per-puff opacity range, before the opacity setting
+WIND_LEAN = .25  # sideways drift per meter risen per unit of wind
+FADE_IN = .06  # fraction of the rise over which a new puff appears
 
 
-class SmokeParticle:
-    def __init__(self, node_path, x, y, z, opacity):
-        self.node_path = node_path
-        self.position = [x, y, z]
-        self.opacity = opacity
-        self.active = False
+class Puff:
+    def __init__(self, node, offset):
+        self.node = node
+        self.offset = offset  # 0..1: where in the rise this puff is at time 0
+        self.cycle = None
+        self._randomize()
 
-    wind = Vec3(0)
+    def _randomize(self):
+        self.size = random.uniform(MIN_SIZE, MAX_SIZE)
+        self.opacity = random.uniform(MIN_OPACITY, MAX_OPACITY)
+        self.salt = random.uniform(.1, .4)  # how quickly its sine curve winds
+        self.side = Vec3(random.choice((-1, 1)), random.choice((-1, 1)), 0)
+        self.phase = random.uniform(0, 2 * math.pi)
 
-    def activate(self, salt):
-        self.salt = salt
-        self.step = SPEED / 100 + random.random() / 1000  # per 60 fps frame
-        self.amplitude = (AMPLITUDE * 10) / 2
-        self.initial_opacity = self.opacity
-        self.offset_x, self.offset_y, self.offset_z = self.position
-        self.min = self.offset_y
-        self.max = self.offset_y + DISTANCE
-        self._create_graph()
-        self.active = True
-        self.node_path.show()
+    def place(self, cycle, fraction, origin, height, sway, wind, size, growth, opacity):
+        if cycle != self.cycle:  # a new rise: new curve, size and opacity, like the JS
+            self.cycle = cycle
+            self._randomize()
+        up = fraction * height
+        # The JS curve: sin(y * salt * y / 10), so the puffs wander more the higher they get.
+        wander = math.sin(up * self.salt * up / 10 + self.phase * fraction) * sway
+        position = origin + Vec3(self.side.x * wander, self.side.y * wander, up) + wind * up * WIND_LEAN
+        self.node.set_pos(position)
+        self.node.set_scale(self.size * size * (1 + growth * fraction))
+        appear = min(fraction / FADE_IN, 1.0)
+        self.node.set_alpha_scale(self.opacity * opacity * appear * (1 - fraction))
 
-    def _create_graph(self):
-        self.x_mod = -1 if random.random() > 0.5 else 1
-        self.z_mod = -1 if random.random() > 0.5 else 1
 
-    def _function(self, y):
-        y -= self.offset_y
-        return math.sin((y * self.amplitude * self.salt) * (y / (10 / self.amplitude)))
+class Smoke:
+    """A smoke column rising from a world position (Panda3D coordinates); `destroy()` removes it."""
+
+    def __init__(self, app, parent, position):
+        self.app = app
+        self.origin = Point3(*(float(v) for v in position))
+        self.time = random.uniform(0, 100)
+        self.group = parent.attach_new_node('smoke')
+        self.group.set_transparency(TransparencyAttrib.M_alpha)
+        shading.set_unlit(self.group)  # MeshBasicMaterial
+        shading.set_cast_shadow(self.group, False)
+        shading.set_in_depth_prepass(self.group, False)
+        positions, normals, indices = sphere(1, SHARPNESS, SHARPNESS)
+        self.geom = make_geom(positions, normals, indices)
+        self.puffs = []
+        self.wind = Vec3(0)
+        settings.subscribe(self.apply, 'env.')
+        self.apply()
+        add_update_callback(self.update)
+
+    def _set_count(self, count):
+        count = max(int(count), 1)
+        if count == len(self.puffs):
+            return
+        for puff in self.puffs:
+            puff.node.remove_node()
+        self.puffs = []
+        for index in range(count):
+            node = GeomNode('smoke-puff')
+            node.add_geom(self.geom)
+            # Evenly spread through the rise (plus a little jitter so it doesn't look like a conveyor).
+            offset = (index + random.uniform(-.3, .3)) / count % 1.0
+            self.puffs.append(Puff(self.group.attach_new_node(node), offset))
+
+    def move_to(self, position):
+        """Move the column's origin (Panda3D coordinates) without restarting it."""
+        self.origin = Point3(*(float(v) for v in position))
+
+    def apply(self, _keys=None):
+        get = settings.get
+        self.group.show() if get('env.smoke') else self.group.hide()
+        self.group.set_color(rgba(get('env.smoke_color')))
+        self._set_count(get('env.smoke_amount'))
+        wind = math.radians(get('env.wind_direction'))
+        self.wind = Vec3(math.sin(wind), math.cos(wind), 0) * get('env.wind_strength')
 
     def update(self, delta):
-        y = self.position[1] + self.step * delta * 60
-        if y >= self.max:
-            y = self.min
-            self._create_graph()
+        if self.group.is_hidden():
+            return
+        get = settings.get
+        height = max(get('env.smoke_height'), .2)
+        life = height / max(BASE_SPEED * get('env.smoke_speed'), .01)
+        self.time += delta
+        size, growth, sway = get('env.smoke_size'), get('env.smoke_growth'), get('env.smoke_spread')
+        opacity = get('env.smoke_opacity')
+        for puff in self.puffs:
+            progress = self.time / life + puff.offset
+            cycle = math.floor(progress)
+            puff.place(cycle, progress - cycle, self.origin, height, sway, self.wind, size, growth, opacity)
 
-        offset = self._function(y)
-        self.position = [offset * self.x_mod + self.offset_x, y, offset * self.z_mod + self.offset_z]
-
-        if FADE_AWAY:
-            value = self.max - y
-            self.opacity = self.initial_opacity if value > self.opacity else value
-
-        # The wind bends the column: the higher a particle rises, the further it drifts.
-        lean = self.wind * (y - self.min) * WIND_LEAN
-        self.node_path.set_pos(three_to_panda(*self.position) + lean)
-        self.node_path.set_alpha_scale(min(max(self.opacity, 0), 1) * settings.get('env.smoke_opacity'))
-
-
-def create_smoke(app, x, y, z):
-    group = app.render.attach_new_node('smoke')
-    group.set_transparency(TransparencyAttrib.M_alpha)
-    shading.set_unlit(group)  # MeshBasicMaterial
-    shading.set_cast_shadow(group, False)
-    shading.set_in_depth_prepass(group, False)
-
-    def apply(_keys=None):
-        group.show() if settings.get('env.smoke') else group.hide()
-        group.set_color(rgba(settings.get('env.smoke_color')))
-        wind = math.radians(settings.get('env.wind_direction'))
-        SmokeParticle.wind = Vec3(math.sin(wind), math.cos(wind), 0) * settings.get('env.wind_strength')
-
-    settings.subscribe(apply, 'env.')
-    apply()
-
-    positions, normals, indices = sphere(1, SHARPNESS, SHARPNESS)
-    geom = make_geom(positions, normals, indices)
-
-    particles = []
-    for _ in range(COUNT):
-        node = GeomNode('smoke-particle')
-        node.add_geom(geom)
-        node_path = group.attach_new_node(node)
-        node_path.set_scale(random.uniform(MIN_SIZE, MAX_SIZE))
-        node_path.hide()
-
-        particle = SmokeParticle(
-            node_path, x, y + random.random() / 10, z,
-            random.uniform(MIN_OPACITY, OPACITY) if RANDOMIZE_OPACITY else OPACITY,
-        )
-        node_path.set_pos(three_to_panda(*particle.position))
-        node_path.set_alpha_scale(particle.opacity)
-        particles.append(particle)
-
-    # setInterval(): release one particle every 200 ms
-    def release(task):
-        inactive = [particle for particle in particles if not particle.active]
-        if not inactive:
-            return task.done
-        inactive[0].activate(SALT * random.random())
-        return task.again
-
-    app.task_mgr.do_method_later(1 - FREQUENCY, release, 'smoke-release')
-
-    def update(delta):
-        for particle in particles:
-            if particle.active:
-                particle.update(delta)
-
-    add_update_callback(update)
-    return group
+    def destroy(self):
+        settings.unsubscribe(self.apply)
+        remove_update_callback(self.update)
+        self.group.remove_node()

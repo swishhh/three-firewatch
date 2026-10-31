@@ -16,9 +16,11 @@ _outline = None
 
 
 class Outline(DirectObject):
-    def __init__(self, app):
+    def __init__(self, app, color=None, thickness=None):
+        """`color` / `thickness` fix this outline's look; by default it follows gfx.outline_*."""
         super().__init__()
         self.app = app
+        self.style = (color, thickness)
         self.objects = {}  # key -> (object, holder in the mask scene)
 
         self.mask = Texture('outline-mask')
@@ -64,8 +66,9 @@ class Outline(DirectObject):
         add_update_callback(self.update)
 
     def apply_settings(self):
-        self.card.set_shader_input('edge_color', rgba(settings.get('gfx.outline_color')))
-        self.card.set_shader_input('radius', settings.get('gfx.outline_thickness'))
+        color, thickness = self.style
+        self.card.set_shader_input('edge_color', color if color is not None else rgba(settings.get('gfx.outline_color')))
+        self.card.set_shader_input('radius', thickness if thickness is not None else settings.get('gfx.outline_thickness'))
 
     def _resize(self, window):
         size = window.get_x_size(), window.get_y_size()

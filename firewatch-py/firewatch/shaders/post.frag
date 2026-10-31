@@ -10,6 +10,8 @@ uniform sampler2D bloom;
 uniform sampler2D dof_blur_texture;
 uniform float bloom_enabled;
 uniform float bloom_intensity;
+uniform float bloom_fast;    // bloom holds one thresholded image with mipmaps instead of the upsampled chain
+uniform float bloom_radius;
 uniform float dof_enabled;
 uniform float dof_focus;
 uniform float dof_range;
@@ -70,6 +72,26 @@ vec3 apply_tonemap(vec3 color) {
     return to_display(linear);
 }
 
+// Same level weights as the High chain's upsampling: each level mixes in the next by bloom_radius.
+vec3 bloom_from_mipmaps(vec2 uv) {
+    const int LEVELS = 6;
+    vec3 sum = vec3(0.0);
+    float weight = 1.0;
+    for (int level = 0; level < LEVELS; ++level) {
+        vec2 texel = 1.0 / vec2(textureSize(bloom, level));
+        vec3 tent = vec3(0.0);
+        for (int x = -1; x <= 1; ++x) {
+            for (int y = -1; y <= 1; ++y) {
+                tent += textureLod(bloom, uv + vec2(x, y) * texel, float(level)).rgb * float((2 - abs(x)) * (2 - abs(y)));
+            }
+        }
+        float share = level == LEVELS - 1 ? weight : weight * (1.0 - bloom_radius);
+        sum += tent / 16.0 * share;
+        weight *= bloom_radius;
+    }
+    return sum;
+}
+
 void main() {
     vec3 color = texture(scene, v_uv).rgb;
 
@@ -79,7 +101,7 @@ void main() {
         color = mix(color, texture(dof_blur_texture, v_uv).rgb, blur);
     }
     if (bloom_enabled > 0.5) {
-        color += texture(bloom, v_uv).rgb * bloom_intensity;
+        color += (bloom_fast > 0.5 ? bloom_from_mipmaps(v_uv) : texture(bloom, v_uv).rgb) * bloom_intensity;
     }
 
     color = apply_tonemap(color * exposure);

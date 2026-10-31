@@ -1,33 +1,23 @@
 """Port of js/component/scene.js: every module listed here gets `draw(app)` called once, in order.
 
-Comment a line out to disable a component. Entries marked "not ported" were disabled in the JS app too.
+The world (terrain, objects, foliage, water, clouds) comes from the active save, see world/runtime.py;
+the JS components that placed objects from MAP arrays became world/legacy.py, which builds the
+'default' save. Comment a line out to disable a component.
 """
 import importlib
 
 from .renderer import init_scene_renderer
 
-COMPONENTS = [
-    'components.terrain',
-    'components.rocks',
-    # 'lampPost',  not ported
-    'components.tent',
-    'components.clouds',
-    'components.tree',
-    'components.bush',
-    'components.grass',
-    # 'water',  not ported
-    'components.campfire',
-    'components.picnic_table',
-    'components.welcome_sign',
-    'components.bird',
-    # 'house', 'fireWatch', 'fireCamp',  not ported
-    'components.environment',  # light.js and fog, plus sky, time of day and wind
+COMMON = [
+    'components.environment',  # light.js and fog, plus sky, sun and moon, time of day and wind
+    'world.runtime',
     'components.snow',
     'components.fireflies',
+]
 
-    # 'mapControls',  not ported
+GAME = [
     'controls.first_person',
-
+    'controls.inventory',
     'controls.select',
     'controls.selection_panel',
     'controls.object',
@@ -36,9 +26,18 @@ COMPONENTS = [
     'ui.settings_panel',
 ]
 
+EDITOR = [
+    'controls.outline',
+    'components.stats',
+    'ui.settings_panel',
+    'editor.editor',
+]
+
+COMPONENTS = {'game': COMMON + GAME, 'editor': COMMON + EDITOR}
+
 
 def draw(app):
-    for name in COMPONENTS:
+    for name in COMPONENTS[app.mode]:
         importlib.import_module(f'firewatch.{name}').draw(app)
 
     init_scene_renderer(app)

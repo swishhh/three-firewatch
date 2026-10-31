@@ -1,32 +1,38 @@
-"""Port of js/component/objects/bird/index.js: a black, flapping bird hovering over the camp."""
+"""Port of js/component/objects/bird/index.js: a black, flapping bird hovering over the camp.
+
+A world object of kind 'bird' (world/entities.py) holds one; position and scale come from the save.
+"""
 from direct.actor.Actor import Actor
 
-from .. import settings, shading
-from ..coords import three_to_panda
-from ..objects import DISTANCE_RENDER_TAG
+from .. import settings
 from ..paths import asset, panda_filename
 
-SCALE = .025
 ANIMATION = 'ArmatureAction'
 CLIP_DURATION = 2.5  # the JS cut the 5 s clip to its first 2.5 s
+MODEL = 'obj/bird-animated.glb'
 
 
-def draw(app):
-    bird = Actor(panda_filename(asset('obj/bird-animated.glb')))
-    bird.set_scale(SCALE)
-    bird.set_pos(three_to_panda(0, 7, 0))
-    bird.set_color((0, 0, 0, 1), 1)  # MeshBasicMaterial({color: 0x000000})
-    shading.set_unlit(bird)
-    shading.set_cast_shadow(bird, False)
-    shading.set_in_depth_prepass(bird, False)
-    bird.set_tag(DISTANCE_RENDER_TAG, '1')
+class Bird:
+    def __init__(self, parent, model=MODEL):
+        self.actor = Actor(panda_filename(asset(model)))
+        self.actor.set_color((0, 0, 0, 1), 1)  # MeshBasicMaterial({color: 0x000000})
+        self.actor.reparent_to(parent)
+        self.parent = parent
+        settings.subscribe(self.apply, 'env.bird')
+        self.apply()
+        try:
+            frame_rate = self.actor.get_frame_rate(ANIMATION)
+            self.actor.loop(ANIMATION, fromFrame=0, toFrame=int(round(CLIP_DURATION * frame_rate)))
+        except Exception as error:  # a different animated model without that clip
+            print(f'bird animation: {error}')
+            names = self.actor.get_anim_names()
+            if names:
+                self.actor.loop(names[0])
 
-    # Toggled through a parent so the distance culling's show()/hide() on the bird doesn't undo it.
-    root = app.render.attach_new_node('bird')
-    bird.reparent_to(root)
-    settings.subscribe(lambda _keys: root.show() if settings.get('env.bird') else root.hide(), 'env.bird')
-    if not settings.get('env.bird'):
-        root.hide()
+    def apply(self, _keys=None):
+        self.actor.show() if settings.get('env.bird') else self.actor.hide()
 
-    frame_rate = bird.get_frame_rate(ANIMATION)
-    bird.loop(ANIMATION, fromFrame=0, toFrame=int(round(CLIP_DURATION * frame_rate)))
+    def destroy(self):
+        settings.unsubscribe(self.apply)
+        self.actor.cleanup()
+        self.actor.remove_node()

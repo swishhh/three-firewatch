@@ -7,6 +7,11 @@ def add_update_callback(callback):
     _callbacks.append(callback)
 
 
+def remove_update_callback(callback):
+    if callback in _callbacks:
+        _callbacks.remove(callback)
+
+
 def get_update_callbacks():
     return _callbacks
 

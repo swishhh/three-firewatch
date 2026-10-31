@@ -8,7 +8,14 @@ uniform vec3 sun_direction;  // world space, towards the sun (or the moon at nig
 uniform vec3 disk_color;     // HDR color of the sun / moon disk and its glow
 uniform float sun_glow;
 uniform float sun_disk;
+uniform vec3 moon_direction;
+uniform vec3 moon_disk_color;
+uniform float moon_glow;
+uniform float moon_disk;
+uniform float sky_curve;       // gradient exponent: lower spreads the zenith color further down
+uniform float sky_brightness;
 uniform float stars;
+uniform float star_density;
 uniform float osg_FrameTime;
 
 in vec3 v_direction;
@@ -23,13 +30,13 @@ float hash(vec3 p) {
 
 void main() {
     if (sky_gradient < 0.5) {
-        o_color = vec4(sky_flat, 1.0);
+        o_color = vec4(sky_flat * sky_brightness, 1.0);
         return;
     }
 
     vec3 direction = normalize(v_direction);
     float height = direction.z;
-    vec3 color = mix(sky_horizon, sky_top, pow(clamp(height, 0.0, 1.0), 0.45));
+    vec3 color = mix(sky_horizon, sky_top, pow(clamp(height, 0.0, 1.0), sky_curve)) * sky_brightness;
     float above_horizon = smoothstep(-0.02, 0.02, height);
 
     float facing = max(dot(direction, sun_direction), 0.0);
@@ -38,11 +45,17 @@ void main() {
     float disk = smoothstep(cos(disk_radius * 1.15), cos(disk_radius * 0.85), facing);
     color += disk_color * 3.0 * disk * above_horizon * step(0.001, sun_disk);
 
+    float moon_facing = max(dot(direction, moon_direction), 0.0);
+    color += moon_disk_color * moon_glow * (0.04 * pow(moon_facing, 6.0) + 0.15 * pow(moon_facing, 60.0)) * above_horizon;
+    float moon_radius = 0.012 * moon_disk;
+    float moon = smoothstep(cos(moon_radius * 1.1), cos(moon_radius * 0.9), moon_facing);
+    color = mix(color, moon_disk_color * 2.0, moon * above_horizon * step(0.001, moon_disk) * step(0.001, dot(moon_disk_color, moon_disk_color)));
+
     if (stars > 0.0 && height > 0.0) {
         vec3 point = direction * 180.0;
         vec3 cell = floor(point);
         float seed = hash(cell);
-        if (seed > 0.982) {
+        if (seed > 1.0 - 0.018 * star_density) {
             vec3 center = cell + 0.5 + (vec3(hash(cell + 1.3), hash(cell + 2.7), hash(cell + 4.1)) - 0.5) * 0.6;
             float twinkle = 0.65 + 0.35 * sin(osg_FrameTime * (1.5 + seed * 4.0) + seed * 40.0);
             float star = smoothstep(0.32, 0.0, length(point - center)) * twinkle;

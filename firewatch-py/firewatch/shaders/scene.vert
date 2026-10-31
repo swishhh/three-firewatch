@@ -10,12 +10,14 @@ uniform mat3 p3d_NormalMatrix;
 in vec4 p3d_Vertex;
 in vec3 p3d_Normal;
 in vec4 p3d_Color;
+in vec2 p3d_MultiTexCoord0;
 
 out vec3 v_world_position;
 out vec3 v_world_normal;
 out vec3 v_view_position;
 out vec3 v_view_normal;
 out vec4 v_color;
+out vec2 v_uv;
 out float v_fog_depth;
 
 void main() {
@@ -27,6 +29,7 @@ void main() {
     v_view_position = view_position.xyz;
     v_view_normal = p3d_NormalMatrix * p3d_Normal;
     v_color = p3d_Color;
+    v_uv = p3d_MultiTexCoord0;
 
     gl_Position = p3d_ProjectionMatrix * view_position;
     // Perspective w is the view-space depth, which is what three.js fog uses (-mvPosition.z).

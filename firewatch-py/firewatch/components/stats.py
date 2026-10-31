@@ -18,11 +18,11 @@ GPU_COLOR = (.55, 1, .45, 1)
 
 
 class UsageGraph:
-    def __init__(self, parent, x, color):
+    def __init__(self, parent, x, color, z=-MARGIN - .04 - HEIGHT):
         self.color = color
         self.samples = deque(maxlen=HISTORY)
         self.root = parent.attach_new_node('usage-graph')
-        self.root.set_pos(x, 0, -MARGIN - .04 - HEIGHT)
+        self.root.set_pos(x, 0, z)
 
         background = CardMaker('background')
         background.set_frame(0, WIDTH, 0, HEIGHT)
@@ -56,12 +56,17 @@ class UsageGraph:
 
 def draw(app):
     cpu, gpu = CpuUsage(), GpuUsage()
-    cpu_graph = UsageGraph(app.a2dTopLeft, MARGIN, CPU_COLOR)
-    gpu_graph = UsageGraph(app.a2dTopLeft, MARGIN * 2 + WIDTH, GPU_COLOR)
+    editor = app.mode == 'editor'
+    if editor:  # bottom left, next to the tool panel, above the status line
+        cpu_graph = UsageGraph(app.a2dBottomLeft, .9, CPU_COLOR, z=.12)
+        gpu_graph = UsageGraph(app.a2dBottomLeft, .9 + MARGIN + WIDTH, GPU_COLOR, z=.12)
+    else:
+        cpu_graph = UsageGraph(app.a2dTopLeft, MARGIN, CPU_COLOR)
+        gpu_graph = UsageGraph(app.a2dTopLeft, MARGIN * 2 + WIDTH, GPU_COLOR)
 
     def show(_keys=None):
         visible = settings.get('gfx.overlay')
-        app.set_frame_rate_meter(visible)
+        app.set_frame_rate_meter(visible and not editor)
         for graph in (cpu_graph, gpu_graph):
             graph.root.show() if visible else graph.root.hide()
 
@@ -70,8 +75,11 @@ def draw(app):
 
     def sample(task):
         system, process = cpu.sample()
-        cap = f'{app.frame_limit} fps' if app.frame_limit else 'off'
-        cpu_graph.push(system, f'CPU {system:3.0f}%   app {process:.0f}% of a core   cap: {cap} (F)')
+        limit = app.frame_limit
+        cap = f'{limit:g} fps' if limit else ('vsync' if settings.get('gfx.vsync') else 'off')
+        if settings.get('gfx.fps_cap') == -1 and limit:
+            cap += ' (display)'
+        cpu_graph.push(system, f'CPU {system:3.0f}%   app {process:.0f}% of a core   cap: {cap} (F2)')
         busy = gpu.sample()
         gpu_graph.push(busy, 'GPU n/a' if busy is None else f'GPU {busy:3.0f}%')
         return task.again

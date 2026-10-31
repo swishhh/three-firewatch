@@ -1,0 +1,23 @@
+WORLD "default copy"
+
+Geometry (triangles)
+  terrain      255,600   of 1,843,200 at full resolution (13.9%, simplification 0.03 m)
+  objects       58,462   in 100 objects
+  foliage       28,336   in 77 instances, 7 cells
+  water         25,270   in 1 bodies
+
+Draw calls in the main pass (before culling)
+  live: 234  (terrain chunks 64, foliage cells 7, object meshes 162, water 1)
+  compiled: 227  (1 static objects merged into 1 meshes)
+
+Findings
+  DYNAMIC   94 objects are selectable in the game, so compiling keeps them separate: rocks-array, small-rocks-array, tiny-rock-vertical, tent, bush-tree-harvest, bush-tree-harvest, bush-tree-harvest, bush-tree-harvest, picnic-table, welcome-sign, lowpolytree, lowpolytree, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, tiny-rock-vertical, tiny-rock-vertical, tiny-rock-vertical, small-rocksArray, small-rocksArray, lowpolytree copy, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree copy, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, rocksArray1, rocks, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, lowpolytree, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass, grass copy. Turn off "Selectable in game" to merge them.
+
+Graphics settings worth checking
+  - MSAA 8x on an HDR buffer is costly on the GPU; 4x looks nearly the same.
+  - 8192 shadow maps take 256 MB/s of fill per update; 4096 is usually enough.
+  - PCSS with 64 samples is the most expensive shadow filter setting.
+  - High quality bloom adds 11 render passes; Fast uses one.
+  - 12000 snowflakes.
+
+Compiled: 13,558 triangles baked into the scene; the game loads it while the save stays unchanged.

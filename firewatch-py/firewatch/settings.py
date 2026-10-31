@@ -1,8 +1,12 @@
-"""Graphics and environment settings: schema, presets and the JSON file they persist to.
+"""Graphics and environment settings: schema, presets and persistence.
 
 Components read values with `settings.get(key)` and react to changes with
-`settings.subscribe(callback, prefix)`. Changes are written to settings.json (next to main.py)
-half a second after the last edit.
+`settings.subscribe(callback, prefix)`.
+
+Graphics (`gfx.*`) are machine settings, written to settings.json (next to main.py) half a second
+after the last edit, and shared by the game and the editor. Everything else (`env.*`: light, sky,
+weather, player physics, ...) belongs to the world and is saved with it (see world/document.py),
+so the game and the editor always show the same environment.
 """
 import json
 from dataclasses import dataclass, field
@@ -10,6 +14,8 @@ from .paths import PACKAGE_DIR
 
 FILE = PACKAGE_DIR.parent / 'settings.json'
 SAVE_DELAY = .5
+VERSION = 2
+WORLD_PREFIX = 'env.'  # keys saved with the world instead of settings.json
 
 
 @dataclass
@@ -61,8 +67,9 @@ def Col(key, label, default, js=None):
 
 GRAPHICS = Tab('Graphics', [
     Section('Display'),
-    C('gfx.fps_cap', 'Frame cap (F)', 0, (0, 30, 60, 120, 144, 165, 240),
-      ('Off', '30', '60', '120', '144', '165', '240')),
+    C('gfx.fps_cap', 'Frame cap (F2)', -1, (-1, 0, 30, 60, 120, 144, 165, 240),
+      ('Display', 'Off', '30', '60', '120', '144', '165', '240')),
+    C('gfx.background_fps', 'Unfocused frame cap', 15, (0, 5, 15, 30, 60), ('Off', '5', '15', '30', '60')),
     B('gfx.vsync', 'Vsync', False, restart=True),
     F('gfx.fov', 'Field of view', 40, 30, 90, step=1),
     C('gfx.render_scale', 'Render scale', 1.0, (.5, .75, 1.0, 1.25, 1.5, 2.0),
@@ -85,9 +92,15 @@ GRAPHICS = Tab('Graphics', [
     F('gfx.shadow_distance', 'Distance', 30, 10, 100, js=50, step=1),  # half-size of the shadowed area
     F('gfx.shadow_bias', 'Normal offset', 1.0, 0, 4),
     F('gfx.shadow_strength', 'Darkness', 1.0, 0, 1),
-    B('gfx.fire_shadows', 'Campfire shadows', True),
-    C('gfx.fire_shadow_resolution', 'Campfire resolution', 512, (256, 512, 1024, 2048)),
-    F('gfx.fire_shadow_softness', 'Campfire softness', .03, 0, .15, step=.005),  # filter radius per unit of distance
+    B('gfx.fire_shadows', 'Point light shadows (campfire, lamps)', True),
+    C('gfx.fire_shadow_resolution', 'Point shadow resolution', 512, (256, 512, 1024, 2048)),
+    F('gfx.fire_shadow_softness', 'Point shadow softness', .03, 0, .15, step=.005),  # filter radius per unit of distance
+    B('gfx.flash_shadows', 'Flashlight shadows', True),
+    C('gfx.flash_shadow_resolution', 'Flashlight resolution', 1024, (512, 1024, 2048)),
+    F('gfx.flash_shadow_softness', 'Flashlight softness', 1.5, 0, 5, step=.1),  # filter radius in texels
+    # Shadow maps are only re-rendered when something moved; swaying plants refresh them at this rate.
+    C('gfx.shadow_update_rate', 'Animated shadow rate', 30, (0, 60, 30, 20, 10),
+      ('Every frame', '60 Hz', '30 Hz', '20 Hz', '10 Hz')),
 
     Section('Ambient occlusion'),
     B('gfx.ao', 'Ambient occlusion', True, js=False),
@@ -104,8 +117,9 @@ GRAPHICS = Tab('Graphics', [
 
     Section('Lighting & detail'),
     B('gfx.smooth_terrain', 'Smooth terrain shading', True, js=False),
-    C('gfx.terrain_detail', 'Terrain detail', 960, (480, 960, 1440), ('Low (JS)', 'High', 'Ultra'), js=480,
-      restart=True),
+    # Terrain chunks drop vertices where that changes the surface by less than this (meters).
+    C('gfx.terrain_lod', 'Terrain simplification', .01, (0, .003, .01, .03),
+      ('Off (full mesh)', 'Fine', 'Balanced', 'Coarse')),
     F('gfx.specular', 'Specular', 1.0, 0, 3),
     F('gfx.draw_distance', 'Draw distance', 80, 20, 200, js=54.77, step=1),
 
@@ -121,6 +135,7 @@ GRAPHICS = Tab('Graphics', [
 
     Section('Effects'),
     B('gfx.bloom', 'Bloom', True, js=False),
+    C('gfx.bloom_quality', 'Bloom quality', 'fast', ('fast', 'high'), ('Fast (1 pass)', 'High (11 passes)')),
     F('gfx.bloom_intensity', 'Bloom intensity', .7, 0, 3),
     F('gfx.bloom_threshold', 'Bloom threshold', .75, 0, 2),
     F('gfx.bloom_radius', 'Bloom radius', .65, 0, 1),
@@ -138,26 +153,34 @@ GRAPHICS = Tab('Graphics', [
     I('gfx.outline_thickness', 'Thickness', 2, 1, 5),
 ])
 
-ENVIRONMENT = Tab('Environment', [
+LIGHTING = Tab('Lighting', [
     Section('Time of day'),
     C('env.time_mode', 'Mode', 'manual', ('manual', 'time'), ('Manual / preset', 'Time of day')),
     F('env.time_of_day', 'Time (hours)', 18.0, 0, 24),  # used in Time of day mode
     B('env.day_cycle', 'Day-night cycle', False),
     F('env.day_length', 'Day length (min)', 10, 1, 60, step=1),
-    F('env.sun_elevation', 'Sun elevation', 54.7, -10, 90, step=.5),
-    F('env.sun_azimuth', 'Sun azimuth', 132.3, 0, 360, step=1),
-    Col('env.sun_color', 'Sun color', '#758aff'),
-    F('env.sun_intensity', 'Sun intensity', 3.9, 0, 10),
 
-    Section('Sky'),
-    C('env.sky_mode', 'Sky', 'gradient', ('flat', 'gradient'), ('Flat color (JS)', 'Gradient'), js='flat'),
-    Col('env.sky_color', 'Background (flat)', '#b79071'),
-    Col('env.sky_top', 'Zenith', '#6f5b86'),
-    Col('env.sky_horizon', 'Horizon', '#cc5200'),
-    B('env.horizon_from_fog', 'Horizon follows fog', True),
-    F('env.sun_glow', 'Sun glow', .8, 0, 3),
-    F('env.sun_disk', 'Sun / moon disk', 1.0, 0, 3),
-    F('env.stars', 'Stars', 0, 0, 1),
+    Section('Sun'),
+    B('env.sun_enabled', 'Sun', True),
+    F('env.sun_elevation', 'Elevation', 54.7, -10, 90, step=.5),
+    F('env.sun_azimuth', 'Azimuth', 132.3, 0, 360, step=1),
+    Col('env.sun_color', 'Light color', '#758aff'),
+    F('env.sun_intensity', 'Intensity', 3.9, 0, 10),
+    B('env.sun_shadows', 'Casts shadows', True),
+    F('env.sun_disk', 'Disk size', 1.0, 0, 4),
+    Col('env.sun_disk_color', 'Disk tint', '#ffffff'),
+    F('env.sun_glow', 'Glow', .8, 0, 3),
+
+    Section('Moon'),
+    B('env.moon_enabled', 'Moon', False),
+    F('env.moon_elevation', 'Elevation', 35, -10, 90, step=.5),
+    F('env.moon_azimuth', 'Azimuth', 300, 0, 360, step=1),
+    Col('env.moon_color', 'Light color', '#9fb4ff'),
+    F('env.moon_intensity', 'Intensity', .6, 0, 5),
+    B('env.moon_shadows', 'Casts shadows', True),
+    F('env.moon_disk', 'Disk size', 1.6, 0, 4),
+    Col('env.moon_disk_color', 'Disk color', '#e8eeff'),
+    F('env.moon_glow', 'Glow', .5, 0, 3),
 
     Section('World light'),
     F('env.hemi_intensity', 'Intensity', .8, 0, 10),
@@ -168,22 +191,53 @@ ENVIRONMENT = Tab('Environment', [
     B('env.fog', 'Fog', True),
     F('env.fog_density', 'Density', .028, 0, .15, step=.001),
     Col('env.fog_color', 'Color', '#cc5200'),
+])
 
-    Section('Terrain'),
-    Col('env.terrain_color', 'Color', '#002409'),
-    C('env.terrain_shape', 'Hills', 'smooth', ('smooth', 'js'), ('Smooth', 'JS bumps'), js='js', restart=True),
-    F('env.snow_cover', 'Snow cover', 0, 0, 1),
+SKY = Tab('Sky', [
+    Section('Sky'),
+    C('env.sky_mode', 'Sky', 'gradient', ('flat', 'gradient'), ('Flat color (JS)', 'Gradient'), js='flat'),
+    Col('env.sky_color', 'Background (flat)', '#b79071'),
+    Col('env.sky_top', 'Zenith', '#6f5b86'),
+    Col('env.sky_horizon', 'Horizon', '#cc5200'),
+    B('env.horizon_from_fog', 'Horizon follows fog', True),
+    F('env.sky_curve', 'Gradient curve', .45, .1, 2),
+    F('env.sky_brightness', 'Brightness', 1.0, 0, 3),
+    F('env.stars', 'Stars', 0, 0, 1),
+    F('env.star_density', 'Star density', 1.0, .2, 3),
+
+    Section('Clouds'),
+    B('env.clouds', 'Clouds', True),
+    Col('env.cloud_color', 'Color', '#ffffff'),
+    F('env.cloud_speed', 'Speed', 1.0, 0, 5),
+    F('env.cloud_opacity', 'Opacity', 1.0, 0, 1),
+    B('env.cloud_shadows', 'Cast shadows', True),
 
     Section('Weather & wind'),
     F('env.wind_strength', 'Wind', .4, 0, 2, js=0),
     F('env.wind_direction', 'Wind direction', 60, 0, 360, step=1),
-    B('env.clouds', 'Clouds', True),
-    F('env.cloud_speed', 'Cloud speed', 1.0, 0, 5),
-    F('env.cloud_opacity', 'Cloud opacity', 1.0, 0, 1),
     B('env.snow', 'Snowfall', False),
-    I('env.snow_amount', 'Snowflakes', 3000, 100, 12000),
+    I('env.snow_amount', 'Snowflakes', 3000, 100, 24000),
     F('env.snow_speed', 'Fall speed', 1.0, .2, 3),
     F('env.snow_size', 'Flake size', .03, .01, .1, step=.005),
+    Col('env.snow_color', 'Flake color', '#ffffff'),
+    F('env.snow_opacity', 'Flake opacity', .75, .05, 1),
+    C('env.snow_shape', 'Flake shape', 'round', ('round', 'soft', 'crystal', 'star', 'square'),
+      ('Round', 'Soft (blurry)', 'Crystal (6 arms)', 'Star', 'Square')),
+    F('env.snow_softness', 'Flake edge softness', .5, 0, 1),
+    F('env.snow_spin', 'Flake spin', .6, 0, 4),
+    F('env.snow_streak', 'Motion streak', 0, 0, 3),
+    B('env.snow_settle', 'Flakes settle on surfaces', True),
+    F('env.snow_melt', 'Settled flakes fade over (s)', 3.0, .2, 20, step=.1),
+    Col('env.snow_settled_color', 'Settled flake color', '#8c96a3'),  # darkens to this on landing, then fades
+])
+
+WORLD = Tab('World', [
+    Section('Terrain'),
+    Col('env.terrain_color', 'Base color', '#002409'),
+    F('env.terrain_roughness', 'Roughness', 1.0, .05, 1),
+    B('env.terrain_receive_shadows', 'Receives shadows', True),
+    B('env.terrain_cast_shadows', 'Casts shadows (hills)', False),
+    F('env.snow_cover', 'Snow cover', 0, 0, 1),
 
     Section('Campfire'),
     Col('env.fire_color', 'Light color', '#ca4316'),
@@ -195,9 +249,36 @@ ENVIRONMENT = Tab('Environment', [
     F('env.glow_distance', 'Glow distance', .5, 0, 50),
     F('env.glow_decay', 'Glow decay', 5.2, -1, 20),
     F('env.fire_flicker', 'Flicker', 1.0, 0, 3),
+    B('env.flames', 'Flames', True),
+    F('env.flame_height', 'Flame height', 1.0, .1, 4, step=.05),
+    F('env.flame_width', 'Flame width', 1.0, .2, 3, step=.05),
+    I('env.flame_tongues', 'Flame tongues', 7, 1, 20),
+    F('env.flame_speed', 'Flame speed (frequency)', 1.0, 0, 5, step=.05),
+    F('env.flame_flicker', 'Flame flicker', .35, 0, 1),
+    F('env.flame_sway', 'Flame sway', .15, 0, 1),
+    Col('env.flame_core_color', 'Flame core color', '#fff1a8'),
+    Col('env.flame_mid_color', 'Flame middle color', '#ff8f1f'),
+    Col('env.flame_tip_color', 'Flame tip color', '#c8300a'),
+    F('env.flame_brightness', 'Flame brightness', 1.1, 0, 10, step=.05),
+    B('env.embers', 'Embers', True),
+    I('env.ember_count', 'Ember count', 40, 0, 300),
+    Col('env.ember_color', 'Ember color', '#ffb347'),
+    F('env.ember_brightness', 'Ember brightness', 4, 0, 15),
+    F('env.ember_speed', 'Ember rise speed (m/s)', .8, .05, 4, step=.05),
+    F('env.ember_height', 'Ember rise height (m)', 2.5, .3, 10, step=.1),
+    F('env.ember_size', 'Ember size', .02, .005, .08, step=.001),
     B('env.smoke', 'Smoke', True),
     Col('env.smoke_color', 'Smoke color', '#000000'),
     F('env.smoke_opacity', 'Smoke opacity', 1.0, 0, 1),
+    I('env.smoke_amount', 'Smoke amount (puffs)', 30, 5, 200),
+    F('env.smoke_size', 'Smoke size', 1.0, .2, 6, step=.05),
+    F('env.smoke_growth', 'Smoke growth (bigger as it rises)', .6, 0, 5, step=.05),
+    F('env.smoke_speed', 'Smoke rise speed', 1.0, .1, 5, step=.05),
+    F('env.smoke_height', 'Smoke rise height (m)', 9, 1, 30, step=.5),
+    F('env.smoke_spread', 'Smoke sway (m)', 1.0, 0, 4, step=.05),
+    F('env.smoke_offset_x', 'Smoke offset X (m)', 0, -6, 6, step=.01),
+    F('env.smoke_offset_y', 'Smoke offset Y (m)', 0, -6, 6, step=.01),
+    F('env.smoke_offset_z', 'Smoke offset Z, up (m)', 0, -6, 6, step=.01),
 
     Section('Ambience'),
     F('env.master_volume', 'Master volume', 1.0, 0, 1),
@@ -206,10 +287,45 @@ ENVIRONMENT = Tab('Environment', [
     I('env.firefly_count', 'Firefly count', 70, 0, 400),
     Col('env.firefly_color', 'Firefly color', '#d6ff7a'),
     F('env.firefly_brightness', 'Firefly brightness', 4, 0, 15),
-    B('env.bird', 'Bird', True),
+    B('env.bird', 'Birds', True),
 ])
 
-TABS = (GRAPHICS, ENVIRONMENT)
+PLAYER = Tab('Player', [
+    Section('Movement'),
+    F('env.player_speed', 'Walk speed', 5, .5, 20),
+    F('env.player_run', 'Run multiplier (shift)', 1.8, 1, 4),
+    F('env.player_jump', 'Jump velocity', 8, 0, 20),
+    F('env.gravity', 'Gravity', 20, 1, 50),
+    F('env.eye_height', 'Eye height', 1.6, .5, 3),
+    F('env.water_slowdown', 'Speed in water', .5, .1, 1),
+
+    Section('Camera bob'),
+    B('env.head_bob', 'Camera bob', True),
+    F('env.bob_height', 'Bounce (m)', .035, 0, .2, step=.005),
+    F('env.bob_sway', 'Side sway (m)', .02, 0, .15, step=.005),
+    F('env.bob_roll', 'Roll tilt (degrees)', .5, 0, 5, step=.05),
+    F('env.bob_rate', 'Steps per second (walking)', 1.9, .5, 4, step=.05),
+    F('env.bob_speed_influence', 'Grows with speed', 1.0, 0, 2.5, step=.05),
+    F('env.bob_run', 'Extra when running', 1.4, 1, 3, step=.05),
+    F('env.bob_smoothing', 'Ease in / out', 8, 1, 30, step=.5),
+    F('env.bob_idle', 'Breathing when still (m)', .004, 0, .03, step=.001),
+    F('env.bob_landing', 'Landing dip (m)', .08, 0, .4, step=.01),
+
+    Section('Footsteps'),
+    B('env.footsteps', 'Footstep sounds', True),
+    F('env.footstep_volume', 'Volume', .6, 0, 1, step=.01),
+    F('env.footstep_run_volume', 'Louder when running', 1.3, 1, 2, step=.05),
+    F('env.footstep_run_rate', 'Faster when running', 1.25, 1, 2, step=.05),
+
+    Section('Collisions'),
+    B('env.collisions', 'Collisions', True),
+    F('env.player_radius', 'Player radius', .3, .05, 1.5),
+    F('env.step_height', 'Step height', .45, 0, 1.5),
+    B('env.world_bounds', 'Keep inside the terrain', True),
+])
+
+TABS = (GRAPHICS, LIGHTING, SKY, WORLD, PLAYER)
+ENVIRONMENT_TABS = (LIGHTING, SKY, WORLD, PLAYER)
 SCHEMA = {item.key: item for tab in TABS for item in tab.items if isinstance(item, Setting)}
 
 # Environment values driven by the time of day (interpolated between presets) in 'time' mode.
@@ -320,6 +436,9 @@ def _valid(setting, value):
 class Store:
     def __init__(self):
         self.values = {key: _encode(setting, setting.default) for key, setting in SCHEMA.items()}
+        self.meta = {'version': VERSION, 'world': 'default'}  # settings.json's '_meta': active world, ...
+        self.legacy_environment = {}  # env.* values found in a version 1 settings.json (migrated into a world)
+        self.legacy_raw = {}
         self._listeners = []
         self._dirty_since = None
         self._clock = 0.0
@@ -333,12 +452,16 @@ class Store:
     def update(self, changes):
         changed = []  # (the module exports `set`, so avoid the builtin name in here)
         for key, value in changes.items():
-            value = _encode(SCHEMA[key], value)
+            setting = SCHEMA.get(key)
+            if setting is None:
+                continue  # a key from an older version
+            value = _encode(setting, value)
             if self.values[key] != value:
                 self.values[key] = value
                 changed.append(key)
         if changed:
-            self._dirty_since = self._clock
+            if any(not key.startswith(WORLD_PREFIX) for key in changed):
+                self._dirty_since = self._clock
             for prefix, callback in list(self._listeners):
                 matching = {key for key in changed if prefix is None or key.startswith(prefix)}
                 if matching:
@@ -349,20 +472,33 @@ class Store:
         """`callback(changed_keys)` after any change to keys starting with `prefix`."""
         self._listeners.append((prefix, callback))
 
+    def unsubscribe(self, callback):
+        self._listeners = [(prefix, listener) for prefix, listener in self._listeners if listener is not callback]
+
     def defaults(self, prefix, js=False):
         return {
             key: (setting.js if js and setting.js is not None else setting.default)
             for key, setting in SCHEMA.items() if key.startswith(prefix)
         }
 
+    def environment(self):
+        """The world-owned values, as saved with a world."""
+        return {key: value for key, value in self.values.items() if key.startswith(WORLD_PREFIX)}
+
+    def set_environment(self, values):
+        """Load a world's environment: its values over the defaults (keys added later keep defaults)."""
+        merged = self.defaults(WORLD_PREFIX)
+        merged.update({key: value for key, value in values.items()
+                       if key in SCHEMA and _valid(SCHEMA[key], value)})
+        self.update(merged)
+
     def apply_graphics_preset(self, name):
         preset = GRAPHICS_PRESETS[name]
         values = self.defaults('gfx.', js=preset == 'js')
         if isinstance(preset, dict):
             values.update(preset)
-        values['gfx.fps_cap'] = self.values['gfx.fps_cap']  # presets don't touch display choices
-        values['gfx.vsync'] = self.values['gfx.vsync']
-        values['gfx.overlay'] = self.values['gfx.overlay']
+        for key in ('gfx.fps_cap', 'gfx.background_fps', 'gfx.vsync', 'gfx.overlay'):
+            values[key] = self.values[key]  # presets don't touch display choices
         self.update(values)
 
     def apply_environment_preset(self, name):
@@ -373,14 +509,36 @@ class Store:
             stored = json.loads(FILE.read_text())
         except (OSError, ValueError):
             return
+        self.legacy_raw = dict(stored)  # removed keys (terrain shape / detail) seed the migrated world
+        meta = stored.pop('_meta', {})
+        version = meta.get('version', 1)
+        self.meta.update(meta)
+        self.meta['version'] = VERSION
         for key, value in stored.items():
             setting = SCHEMA.get(key)
-            if setting is not None and _valid(setting, value):
+            if setting is None or not _valid(setting, value):
+                continue
+            if key.startswith(WORLD_PREFIX):
+                self.legacy_environment[key] = value
+            else:
                 self.values[key] = _encode(setting, value)
+        if version < 2:
+            # Version 1 defaulted to an uncapped frame rate, which kept a CPU core busy rendering
+            # hundreds of identical frames a second; follow the display instead.
+            if self.values['gfx.fps_cap'] == 0:
+                self.values['gfx.fps_cap'] = SCHEMA['gfx.fps_cap'].default
+            self._dirty_since = self._clock
 
     def save(self):
-        FILE.write_text(json.dumps(self.values, indent=2, sort_keys=True) + '\n')
+        values = {key: value for key, value in self.values.items() if not key.startswith(WORLD_PREFIX)}
+        values['_meta'] = self.meta
+        FILE.write_text(json.dumps(values, indent=2, sort_keys=True) + '\n')
         self._dirty_since = None
+
+    def set_meta(self, key, value):
+        if self.meta.get(key) != value:
+            self.meta[key] = value
+            self._dirty_since = self._clock
 
     def tick(self, delta):
         """Debounced save, called every frame."""
@@ -394,3 +552,4 @@ get = store.get
 set = store.set
 update = store.update
 subscribe = store.subscribe
+unsubscribe = store.unsubscribe

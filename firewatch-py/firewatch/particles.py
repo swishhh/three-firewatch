@@ -13,6 +13,7 @@ CORNERS = np.array([(-1, -1), (1, -1), (1, 1), (-1, 1)], dtype=np.float32)
 
 SNOW = 0
 FIREFLIES = 1
+EMBERS = 2
 
 
 class ParticleSystem:

@@ -10,6 +10,7 @@ from panda3d.core import (Camera, FrameBufferProperties, GraphicsOutput, Graphic
                           SamplerState, Texture, Vec3, WindowProperties, look_at)
 
 from . import settings, shading
+from .shadow_cache import ShadowSchedule
 from .update import add_update_callback
 
 NEAR = .1
@@ -57,6 +58,8 @@ class Sun:
             sampler.set_wrap_v(SamplerState.WM_clamp)
 
         self.samplers = (compare, raw)
+        self.schedule = ShadowSchedule()
+        self.enabled = True  # False while no sun or moon casts shadows
         self.targets = [app.render]  # the scene reads shadow_mode/strength, ao.frag does the lookups
 
         settings.subscribe(lambda _keys: self.apply_settings(), 'gfx.shadow')
@@ -70,7 +73,7 @@ class Sun:
             self.buffer.set_size(size, size)
         self.film = get('gfx.shadow_distance') * 2
         self.lens.set_film_size(self.film, self.film)
-        self.buffer.set_active(get('gfx.shadows'))
+        self.schedule.force()
 
         inputs = {
             'shadow_mode': SHADOW_MODES[get('gfx.shadow_filter')] if get('gfx.shadows') else 0,
@@ -104,7 +107,12 @@ class Sun:
     def set_direction(self, direction):
         self.direction = Vec3(direction).normalized()
 
-    def update(self, _delta):
+    def set_enabled(self, enabled):
+        if enabled != self.enabled:
+            self.enabled = enabled
+            self.schedule.force()
+
+    def update(self, delta):
         up = Vec3(0, 1, 0) if abs(self.direction.z) > .99 else Vec3(0, 0, 1)
         rotation = Quat()
         look_at(rotation, -self.direction, up)
@@ -124,3 +132,7 @@ class Sun:
 
         self.camera.set_quat(rotation)
         self.camera.set_pos(rotation.xform(local) + self.direction * BACK)
+
+        active = settings.get('gfx.shadows') and self.enabled
+        key = (tuple(round(v, 5) for v in self.camera.get_pos()), tuple(round(v, 6) for v in rotation))
+        self.buffer.set_active(bool(active) and self.schedule.due(delta, key))
