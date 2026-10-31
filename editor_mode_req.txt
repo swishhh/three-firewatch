@@ -1,0 +1,18 @@
+1. I need a separate map environment editor mode. Editor mode can be a separate app run instead of main one. Editor mode will run with the same graphics settings, but environment configured in editor mode must be preserved for both.
+2. All changes made must be saved, meaning that environment and its objects and everything must be preserved on changes and loaded on next load. There could be multiple saves, so do it like save name and load from save.
+3. Editor:
+    1. All the objects can be moved.
+    2. All the properties such as color, scale, size and etc can be editable.
+    3. Grass for example can be made as "brush" and placed on terrain.
+    4. Terrain must be editable with possibility to for example make hills, draw different color on selected area and etc.
+        its color, its shadows map and etc. Terrain shape must be smooth with hils transations, there must not be edge lines going up heel and etc.
+    4. World light can be edited with all its properties.
+    6. Collissions configuration.
+    7. Add brush of watter and watter, its configuration and properties. Water will be placed on terrain and etc.
+    8. Editing ading and removing objets. As my objects are mainly located in one dir - there must be a menu with selecting objects. If I put new object - I don't have to restart the app, add refresh button to display new objects.
+    9. Sky can be edited too.
+    10. Add sun and moon, they can be edited, their possition size, their light and shadow cast can be edited, color and etc, as much configs as possible.
+Keep current environment settings or move them to savings.
+
+Add something like analyzer or etc for the best performance, for example, if I have finished editing can there be some kind of compile so with running it as a game in first person (not edit mode) the performance will be the best.
+FINAL AND THE MOST IMPORTANT THING: while running the game/app - CPU takes all the processing, it is always 50% loaded while GPU stays at 2% load it is not normal.
